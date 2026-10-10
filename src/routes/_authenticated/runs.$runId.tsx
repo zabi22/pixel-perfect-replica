@@ -7,6 +7,7 @@ import { advanceRun, cancelRun, createRun, getRun } from "@/lib/app.functions";
 import { describeStep, type Step } from "@/lib/plan/schema";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, fmtTime, fmtDuration } from "@/components/status";
+import { PlanEditor, ObservationPanel } from "@/components/plan-editor";
 
 export const Route = createFileRoute("/_authenticated/runs/$runId")({
   head: () => ({
@@ -32,6 +33,8 @@ function RunPage() {
   const rerun = useServerFn(createRun);
   const driving = useRef(false);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const q = useQuery({
     queryKey: ["run", runId],
@@ -61,17 +64,22 @@ function RunPage() {
   const done = steps.filter((s) => !["pending", "running"].includes(s.status)).length;
   const analysis = run.analysis as { observed: string; hypotheses: string[]; nextStep: string } | null;
   const active = ACTIVE.has(run.status);
+  const failedIdx = steps.find((s) => s.status === "failed" || s.status === "inconclusive")?.position;
 
   async function doCancel() {
     await cancel({ data: { runId } }).catch((e) => toast.error((e as Error).message));
     qc.invalidateQueries({ queryKey: ["run", runId] });
   }
-  async function doRerun() {
+  async function doRerun(edited?: Step[]) {
+    setBusy(true);
     try {
-      const r = await rerun({ data: { testId: run!.test_id, idempotencyKey: crypto.randomUUID() } });
+      const r = await rerun({ data: { testId: run!.test_id, idempotencyKey: crypto.randomUUID(), parentRunId: run!.id, ...(edited ? { plan: edited } : {}) } });
+      setEditing(false);
       navigate({ to: "/runs/$runId", params: { runId: r.runId } });
     } catch (e) {
       toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -95,9 +103,22 @@ function RunPage() {
               {run.cancel_requested ? "Cancelling…" : "Cancel"}
             </Button>
           )}
-          {!active && <Button onClick={doRerun}>Rerun</Button>}
+          {!active && <Button variant="outline" onClick={() => setEditing(true)}>Edit & rerun</Button>}
+          {!active && <Button onClick={() => doRerun()}>Rerun</Button>}
         </div>
       </div>
+
+      {run.parent_run_id && (
+        <p className="-mt-4 mb-6 text-xs text-muted-foreground">
+          Rerun of <Link to="/runs/$runId" params={{ runId: run.parent_run_id }} className="underline">an earlier run</Link>.
+        </p>
+      )}
+
+      {editing && (
+        <div className="mb-6">
+          <PlanEditor plan={plan} highlight={failedIdx} busy={busy} onCancel={() => setEditing(false)} onSubmit={(p) => doRerun(p)} />
+        </div>
+      )}
 
       {active && (
         <div className="mb-6 rounded-md border border-info/30 bg-info/5 px-4 py-3 text-sm">
@@ -114,6 +135,7 @@ function RunPage() {
           <div className="mt-1">{run.error_message}</div>
           {run.status === "infra_error" && <div className="mt-1 text-xs text-muted-foreground">This is a configuration or infrastructure problem. Your website was not judged.</div>}
           {run.status === "inconclusive" && <div className="mt-1 text-xs text-muted-foreground">The result could not be reliably determined. This is not a verified application defect.</div>}
+          {run.error_code === "element_ambiguous" && <div className="mt-1 text-xs">Several elements matched. Use <b>Edit & rerun</b> to choose a more specific name or locator.</div>}
         </div>
       )}
 
@@ -158,6 +180,7 @@ function RunPage() {
                         <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-muted-foreground">{(s.network_errors as string[]).join("\n")}</pre>
                       </details>
                     )}
+                    {s.page_observation && <ObservationPanel obs={s.page_observation as never} />}
                   </dl>
                   {s.screenshot_url && (
                     <button onClick={() => setZoom(s.screenshot_url)} className="overflow-hidden rounded border border-border">
