@@ -119,6 +119,46 @@ async function __dp_run(page, ctx, kind, hooks) {
     };
   }
 
+
+  // Accessible page summary for locator failures. Self-contained. Never reads input values,
+  // cookies or storage; hrefs are reduced to same-site path (no query/hash/credentials).
+  function observePage(t) {
+    function norm(s) { return (s || "").replace(/\\s+/g, " ").trim(); }
+    function visible(el) { var r = el.getBoundingClientRect(); var s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none"; }
+    function name(el) {
+      var v = el.getAttribute("aria-label"); if (v) return norm(v);
+      if (el.tagName === "INPUT") return norm(el.getAttribute("placeholder") || el.getAttribute("name") || el.type);
+      return norm(el.getAttribute("title") || el.innerText || el.textContent || el.getAttribute("alt")).slice(0, 80);
+    }
+    function role(el) {
+      var r = el.getAttribute("role"); if (r) return r;
+      var tg = el.tagName;
+      if (tg === "A") return "link"; if (tg === "BUTTON") return "button"; if (/^H[1-6]$/.test(tg)) return "heading";
+      if (tg === "SELECT") return "combobox"; if (tg === "TEXTAREA") return "textbox";
+      if (tg === "INPUT") return /^(submit|button|reset)$/.test(el.type) ? "button" : el.type === "checkbox" ? "checkbox" : el.type === "radio" ? "radio" : "textbox";
+      return tg.toLowerCase();
+    }
+    function path(el) {
+      var h = el.getAttribute("href"); if (!h) return undefined;
+      try { var u = new URL(h, location.href); if (u.protocol === "mailto:" || u.protocol === "tel:") return u.protocol; if (u.origin !== location.origin) return u.hostname; return u.pathname; } catch (e) { return undefined; }
+    }
+    var want = norm(t.by === "role" ? t.name : t.value).toLowerCase();
+    var els = Array.prototype.slice.call(document.querySelectorAll("a[href],button,[role=button],[role=link],[role=menuitem],[role=tab],h1,h2,h3,input,select,textarea"));
+    var seen = {}, items = [], hidden = 0, collapsed = [], matches = [];
+    els.forEach(function (el) {
+      var vis = visible(el); var n = name(el); var r = role(el);
+      if (!vis) { if (want && n.toLowerCase().indexOf(want) !== -1) hidden++; return; }
+      if (el.getAttribute("aria-expanded") === "false" || /menu|meny|navigation/i.test(n) && r === "button") collapsed.push(n.slice(0, 40));
+      var item = { role: r, name: n, href: path(el) };
+      if (want && n.toLowerCase().indexOf(want) !== -1) matches.push(item);
+      var k = r + "|" + n + "|" + item.href; if (seen[k] || !n) return; seen[k] = 1;
+      if (items.length < 60) items.push(item);
+    });
+    var bodyTxt = (document.body ? document.body.innerText : "").toLowerCase();
+    var mentions = 0; if (want) { var p = 0; while ((p = bodyTxt.indexOf(want, p)) !== -1 && mentions < 50) { mentions++; p += want.length; } }
+    return { want: want, url: location.origin + location.pathname, title: norm(document.title).slice(0, 120), matches: matches.slice(0, 15), hiddenMatches: hidden, textMentions: mentions, collapsedMenus: collapsed.slice(0, 5), elements: items };
+  }
+
   async function locate(target, deadline) {
     var last = { found: 0 };
     while (true) {
