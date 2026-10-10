@@ -192,8 +192,16 @@ async function __dp_run(page, ctx, kind, hooks) {
     var label = describeTarget(s.target);
     var el = await locate(s.target, deadline);
     if (el.found !== 1) {
-      if (el.ambiguous) return { code: "element_ambiguous", expected: label + " is a single element", observed: el.found + " visible elements match " + label + "; make the target more specific" };
-      return { code: "element_not_found", expected: label + " is visible", observed: el.hidden ? label + " exists but is hidden (" + el.hidden + " match)" : "No element matching " + label + " appeared within " + timeoutMs + "ms" };
+      var obs = null;
+      try { obs = await page.evaluate(observePage, s.target); } catch (e) { obs = { error: clip(String(e && e.message || e), 200) }; }
+      if (el.ambiguous) return { code: "element_ambiguous", expected: label + " is a single element", observed: el.found + " visible elements match " + label + ". No element was clicked; choose a more specific target.", observation: obs };
+      var extra = "";
+      if (obs && obs.textMentions === 0) extra = ' The text "' + clip(obs.want, 60) + '" does not appear anywhere in the page text.';
+      else if (obs && obs.textMentions > 0) extra = ' The text appears ' + obs.textMentions + ' time(s) in the page, but not as a visible ' + (s.target.role || "matching element") + '.';
+      if (obs && obs.collapsedMenus && obs.collapsedMenus.length) extra += " Collapsed menu control(s) present: " + obs.collapsedMenus.map(function (m) { return '"' + m + '"'; }).join(", ") + ".";
+      return { code: "element_not_found", expected: label + " is visible",
+        observed: (el.hidden ? label + " exists but is hidden (" + el.hidden + " match)." : "No element matching " + label + " appeared within " + timeoutMs + "ms.") + extra,
+        observation: obs };
     }
     if (s.action === "waitFor" || s.action === "assertVisible") return { code: null, expected: label + " is visible", observed: "Found " + el.tag.toLowerCase() + (el.name ? ' "' + clip(el.name, 60) + '"' : "") };
     if (el.disabled) return { code: "element_disabled", expected: label + " is enabled", observed: label + " is disabled" };
