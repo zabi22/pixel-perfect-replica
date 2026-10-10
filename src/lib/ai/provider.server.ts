@@ -65,7 +65,7 @@ export const PLAN_SYSTEM_PROMPT = `You convert a plain-English website test jour
 Return ONLY {"steps":[...],"assumptions":["..."],"ambiguities":["..."]}.
 "assumptions": every guess you made that the user did not state (e.g. a link name, a page path, a confirmation text). You cannot see the site, so any element name or text you did not get from the user IS an assumption — list it.
 "ambiguities": parts of the instruction that are unclear or could not be expressed with the allowed steps (and were therefore left out).
-Follow the user's actual instruction step by step; do not pad it with generic checks. Step shapes (no other actions exist):
+Follow the user's actual instruction step by step; do not pad it with generic checks. NEVER invent specific content the user did not give (people's names, product names, prices, exact messages) from your own knowledge of the site; if checking it would need such content, leave that check out and list it under "ambiguities". Step shapes (no other actions exist):
 {"action":"goto","path":"/relative/path"}
 {"action":"click","target":T}
 {"action":"fill","target":T,"value":"synthetic test data"}
