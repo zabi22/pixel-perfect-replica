@@ -56,3 +56,10 @@ describe("verdicts", () => {
     expect(deriveRunStatus([{ status: "inconclusive" }, { status: "skipped" }], 2)).toBe("inconclusive");
   });
 });
+
+import { TEMPLATES } from "./templates";
+describe("starter templates", () => {
+  it("every template is a valid, runnable plan", () => {
+    for (const t of TEMPLATES) expect(validatePlan(t.steps, "https://example.com").ok, t.id).toBe(true);
+  });
+});

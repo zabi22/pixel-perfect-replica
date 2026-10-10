@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfigBanner } from "./dashboard";
+import { TEMPLATES } from "@/lib/plan/templates";
 
 export const Route = createFileRoute("/_authenticated/tests/$testId")({
   validateSearch: z.object({ projectId: z.string().uuid() }),
@@ -44,6 +45,7 @@ function Builder() {
   const [rows, setRows] = useState<Row[]>([]);
   const [issues, setIssues] = useState<PlanIssue[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
 
   const existing = useQuery({
     queryKey: ["test", testId],
@@ -83,6 +85,7 @@ function Builder() {
       if (r.error) toast.error(`AI drafting unavailable: ${r.error}. You can still write steps by hand.`);
       setRows(toRows(r.steps));
       setIssues(r.issues);
+      setSource(r.error ? null : "AI draft");
       if (!name && instruction) setName(instruction.slice(0, 60));
     } catch (e) {
       toast.error((e as Error).message);
@@ -147,12 +150,27 @@ function Builder() {
           <h1 className="text-2xl font-semibold tracking-tight">{isNew ? "New test" : "Edit test"}</h1>
           <p className="font-mono text-xs text-muted-foreground">{project.data?.base_url}</p>
         </div>
+        {isNew && (
+          <div className="space-y-2">
+            <Label>1. Start from a template (optional)</Label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {TEMPLATES.map((t) => (
+                <button key={t.id} type="button"
+                  onClick={() => { setName(t.name); setInstruction(t.instruction); setRows(toRows(t.steps)); setIssues([]); setSource(`Template: ${t.name}`); }}
+                  className="rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-primary/60 hover:bg-accent">
+                  <div className="text-sm font-medium">{t.name}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">{t.summary}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="tname">Name</Label>
           <Input id="tname" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="instr">Journey in plain English</Label>
+          <Label htmlFor="instr">{isNew ? "2. " : ""}Describe the journey in plain English</Label>
           <Textarea
             id="instr"
             rows={7}
@@ -172,7 +190,10 @@ function Builder() {
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground">Plan ({rows.length} steps)</h2>
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">{isNew ? "3. Review the plan" : "Plan"} ({rows.length} steps)</h2>
+            <p className="text-xs text-muted-foreground">{source ? `${source} · not executed yet` : "Not executed yet"} — edit names to match your site, then Save or Run.</p>
+          </div>
           <Button size="sm" variant="ghost" onClick={() => setRows([...rows, { text: '{"action":"assertText","text":""}' }])}>
             <Plus /> Add step
           </Button>

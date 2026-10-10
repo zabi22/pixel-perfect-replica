@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
 import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
 import { Route as AuthenticatedRunsRunIdRouteImport } from './routes/_authenticated/runs.$runId'
+import { Route as AuthenticatedRunsCompareRouteImport } from './routes/_authenticated/runs.compare'
 import { Route as AuthenticatedTestsTestIdRouteImport } from './routes/_authenticated/tests.$testId'
 import { Route as ApiPublicTestSiteSlowRouteImport } from './routes/api/public/test-site/slow'
 import { Route as ApiPublicWorkerTickRouteImport } from './routes/api/public/worker/tick'
@@ -62,6 +63,12 @@ const AuthenticatedRunsRunIdRoute = AuthenticatedRunsRunIdRouteImport.update({
   path: '/runs/$runId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRunsCompareRoute =
+  AuthenticatedRunsCompareRouteImport.update({
+    id: '/runs/compare',
+    path: '/runs/compare',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTestsTestIdRoute =
   AuthenticatedTestsTestIdRouteImport.update({
     id: '/tests/$testId',
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/runs/compare': typeof AuthenticatedRunsCompareRoute
   '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
   '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
   '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
@@ -99,6 +107,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/projects/new': typeof AuthenticatedProjectsNewRoute
   '/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/runs/compare': typeof AuthenticatedRunsCompareRoute
   '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
   '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
   '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
@@ -113,6 +122,7 @@ export interface FileRoutesById {
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
   '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
   '/_authenticated/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/_authenticated/runs/compare': typeof AuthenticatedRunsCompareRoute
   '/_authenticated/tests/$testId': typeof AuthenticatedTestsTestIdRoute
   '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
   '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/runs/$runId'
+    | '/runs/compare'
     | '/tests/$testId'
     | '/api/public/test-site/slow'
     | '/api/public/worker/tick'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/runs/$runId'
+    | '/runs/compare'
     | '/tests/$testId'
     | '/api/public/test-site/slow'
     | '/api/public/worker/tick'
@@ -152,6 +164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects/$projectId'
     | '/_authenticated/projects/new'
     | '/_authenticated/runs/$runId'
+    | '/_authenticated/runs/compare'
     | '/_authenticated/tests/$testId'
     | '/api/public/test-site/slow'
     | '/api/public/worker/tick'
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRunsRunIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/runs/compare': {
+      id: '/_authenticated/runs/compare'
+      path: '/runs/compare'
+      fullPath: '/runs/compare'
+      preLoaderRoute: typeof AuthenticatedRunsCompareRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tests/$testId': {
       id: '/_authenticated/tests/$testId'
       path: '/tests/$testId'
@@ -253,6 +273,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
   AuthenticatedProjectsNewRoute: typeof AuthenticatedProjectsNewRoute
   AuthenticatedRunsRunIdRoute: typeof AuthenticatedRunsRunIdRoute
+  AuthenticatedRunsCompareRoute: typeof AuthenticatedRunsCompareRoute
   AuthenticatedTestsTestIdRoute: typeof AuthenticatedTestsTestIdRoute
 }
 
@@ -261,6 +282,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
   AuthenticatedProjectsNewRoute: AuthenticatedProjectsNewRoute,
   AuthenticatedRunsRunIdRoute: AuthenticatedRunsRunIdRoute,
+  AuthenticatedRunsCompareRoute: AuthenticatedRunsCompareRoute,
   AuthenticatedTestsTestIdRoute: AuthenticatedTestsTestIdRoute,
 }
 

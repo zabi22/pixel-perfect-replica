@@ -14,5 +14,5 @@ export default defineConfig({
   },
   // Only read by the Vercel preset: a claimed run holds the request up to ~80 s
   // (60 s browser budget + upload), so raise the function limit above Hobby's 60 s default.
-  nitro: { vercel: { functions: { maxDuration: 120 } } },
+  nitro: { vercel: { functions: { maxDuration: 120 } } } as Record<string, unknown>,
 });
