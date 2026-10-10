@@ -48,7 +48,7 @@ export function parseIPv4(host: string): number[] | null {
 }
 
 export function isBlockedIPv4(o: number[]): boolean {
-  const [a, b, c] = o;
+  const a = o[0] ?? 0, b = o[1] ?? 0, c = o[2] ?? 0;
   if (a === 0) return true; // this network
   if (a === 10) return true;
   if (a === 127) return true;
@@ -78,14 +78,15 @@ export function parseIPv6(input: string): number[] | null {
   if (maybeV4.includes(".")) {
     const v4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(maybeV4) ? maybeV4.split(".").map(Number) : null;
     if (!v4 || v4.some((n) => n > 255)) return null;
-    tailV4 = [(v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3]];
+    const [p0 = 0, p1 = 0, p2 = 0, p3 = 0] = v4;
+    tailV4 = [(p0 << 8) | p1, (p2 << 8) | p3];
     s = s.slice(0, lastColon + 1) + "0:0";
   }
   const halves = s.split("::");
   if (halves.length > 2) return null;
   const parse = (h: string) => (h === "" ? [] : h.split(":"));
-  const head = parse(halves[0]);
-  const tail = halves.length === 2 ? parse(halves[1]) : [];
+  const head = parse(halves[0] ?? "");
+  const tail = halves.length === 2 ? parse(halves[1] ?? "") : [];
   const fill = 8 - head.length - tail.length;
   if (halves.length === 1 && head.length !== 8) return null;
   if (halves.length === 2 && fill < 1) return null;
@@ -97,13 +98,14 @@ export function parseIPv6(input: string): number[] | null {
     out.push(parseInt(g, 16));
   }
   if (tailV4.length) {
-    out[6] = tailV4[0];
-    out[7] = tailV4[1];
+    out[6] = tailV4[0] ?? 0;
+    out[7] = tailV4[1] ?? 0;
   }
   return out;
 }
 
-export function isBlockedIPv6(g: number[]): boolean {
+export function isBlockedIPv6(input: number[]): boolean {
+  const g = Array.from({ length: 8 }, (_, i) => input[i] ?? 0);
   const allZeroUntil = (n: number) => g.slice(0, n).every((x) => x === 0);
   if (g.every((x) => x === 0)) return true; // ::
   if (allZeroUntil(7) && g[7] === 1) return true; // ::1

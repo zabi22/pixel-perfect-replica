@@ -92,7 +92,7 @@ function Builder() {
   }
 
   async function persist(): Promise<string | null> {
-    const r = await save({ data: { projectId, testId: isNew ? undefined : testId, name: name || "Untitled test", instruction, steps: parsedSteps() } });
+    const r = await save({ data: { projectId, ...(isNew ? {} : { testId }), name: name || "Untitled test", instruction, steps: parsedSteps() } });
     if (!r.ok) {
       setIssues(r.issues);
       toast.error("The plan has problems. Fix the highlighted steps.");
@@ -134,7 +134,7 @@ function Builder() {
   const move = (i: number, d: number) => {
     const next = [...rows];
     const [x] = next.splice(i, 1);
-    next.splice(i + d, 0, x);
+    if (x) next.splice(i + d, 0, x);
     setRows(next);
   };
 

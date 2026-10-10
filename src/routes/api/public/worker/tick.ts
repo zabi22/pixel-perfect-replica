@@ -6,7 +6,7 @@ async function sha256(s: string) {
 async function safeEqual(a: string, b: string) {
   const [x, y] = await Promise.all([sha256(a), sha256(b)]);
   let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  for (let i = 0; i < x.length; i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
   return diff === 0;
 }
 

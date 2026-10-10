@@ -19,7 +19,7 @@ export function StatusBadge({ status, className }: { status: string; className?:
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide",
-        STYLES[status] ?? STYLES.queued,
+        STYLES[status] ?? STYLES["queued"],
         className,
       )}
     >
