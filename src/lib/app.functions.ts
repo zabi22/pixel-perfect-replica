@@ -125,8 +125,13 @@ export const draftPlan = createServerFn({ method: "POST" })
 
 export const createRun = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { testId: string; idempotencyKey: string }) =>
-    z.object({ testId: z.string().uuid(), idempotencyKey: z.string().min(8).max(100) }).parse(d),
+  .inputValidator((d: { testId: string; idempotencyKey: string; plan?: unknown; parentRunId?: string }) =>
+    z.object({
+      testId: z.string().uuid(),
+      idempotencyKey: z.string().min(8).max(100),
+      plan: z.array(z.unknown()).max(50).optional(),
+      parentRunId: z.string().uuid().optional(),
+    }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
@@ -135,9 +140,18 @@ export const createRun = createServerFn({ method: "POST" })
     const { data: test } = await sb.from("tests").select("id,project_id,instruction,projects(base_url)").eq("id", data.testId).single();
     if (!test) throw new Error("Test not found");
     const baseUrl = (test.projects as unknown as { base_url: string }).base_url;
-    const { data: steps } = await sb.from("test_steps").select("step").eq("test_id", test.id).order("position");
-    const v = validatePlan((steps ?? []).map((s) => s.step), baseUrl);
-    if (!v.ok) throw new Error(`Plan is invalid: ${v.issues.map((i) => i.message).join("; ")}`);
+    let rawPlan: unknown[];
+    if (data.plan) rawPlan = data.plan; // edited rerun: validated below exactly like saved plans
+    else {
+      const { data: steps } = await sb.from("test_steps").select("step").eq("test_id", test.id).order("position");
+      rawPlan = (steps ?? []).map((s) => s.step);
+    }
+    if (data.parentRunId) {
+      const { data: parent } = await sb.from("runs").select("id").eq("id", data.parentRunId).eq("test_id", test.id).maybeSingle();
+      if (!parent) throw new Error("Original run not found");
+    }
+    const v = validatePlan(rawPlan, baseUrl);
+    if (!v.ok) throw new Error(`Plan is invalid: ${v.issues.map((i) => `#${i.index + 1}: ${i.message}`).join("; ")}`);
     const chk = await checkUrlResolved(baseUrl);
     if (!chk.ok) throw new Error(`Target rejected by security policy: ${chk.reason}`);
     const { data: run, error } = await sb
@@ -150,6 +164,7 @@ export const createRun = createServerFn({ method: "POST" })
         instruction: test.instruction,
         plan: v.steps as never,
         target_url: baseUrl,
+        parent_run_id: data.parentRunId ?? null,
       })
       .select("id")
       .single();

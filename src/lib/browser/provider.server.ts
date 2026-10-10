@@ -13,6 +13,7 @@ export type ExecStepResult = {
   networkErrors?: string[];
   screenshot?: string | null; // base64 jpeg
   url?: string | null;
+  observation?: Record<string, unknown> | null; // accessible page summary on locator failures
   startedAt: string;
   durationMs: number;
 };
