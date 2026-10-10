@@ -10,33 +10,160 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as TestSiteRouteImport } from './routes/test-site'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
+import { Route as AuthenticatedProjectsNewRouteImport } from './routes/_authenticated/projects.new'
+import { Route as AuthenticatedRunsRunIdRouteImport } from './routes/_authenticated/runs.$runId'
+import { Route as AuthenticatedTestsTestIdRouteImport } from './routes/_authenticated/tests.$testId'
+import { Route as ApiPublicTestSiteSlowRouteImport } from './routes/api/public/test-site/slow'
+import { Route as ApiPublicWorkerTickRouteImport } from './routes/api/public/worker/tick'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestSiteRoute = TestSiteRouteImport.update({
+  id: '/test-site',
+  path: '/test-site',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProjectsProjectIdRoute =
+  AuthenticatedProjectsProjectIdRouteImport.update({
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProjectsNewRoute =
+  AuthenticatedProjectsNewRouteImport.update({
+    id: '/projects/new',
+    path: '/projects/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRunsRunIdRoute = AuthenticatedRunsRunIdRouteImport.update({
+  id: '/runs/$runId',
+  path: '/runs/$runId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTestsTestIdRoute =
+  AuthenticatedTestsTestIdRouteImport.update({
+    id: '/tests/$testId',
+    path: '/tests/$testId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicTestSiteSlowRoute = ApiPublicTestSiteSlowRouteImport.update({
+  id: '/api/public/test-site/slow',
+  path: '/api/public/test-site/slow',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWorkerTickRoute = ApiPublicWorkerTickRouteImport.update({
+  id: '/api/public/worker/tick',
+  path: '/api/public/worker/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/test-site': typeof TestSiteRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
+  '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/test-site': typeof TestSiteRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
+  '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/test-site': typeof TestSiteRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/_authenticated/projects/new': typeof AuthenticatedProjectsNewRoute
+  '/_authenticated/runs/$runId': typeof AuthenticatedRunsRunIdRoute
+  '/_authenticated/tests/$testId': typeof AuthenticatedTestsTestIdRoute
+  '/api/public/test-site/slow': typeof ApiPublicTestSiteSlowRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/test-site'
+    | '/dashboard'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/runs/$runId'
+    | '/tests/$testId'
+    | '/api/public/test-site/slow'
+    | '/api/public/worker/tick'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/test-site'
+    | '/dashboard'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/runs/$runId'
+    | '/tests/$testId'
+    | '/api/public/test-site/slow'
+    | '/api/public/worker/tick'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/test-site'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/projects/$projectId'
+    | '/_authenticated/projects/new'
+    | '/_authenticated/runs/$runId'
+    | '/_authenticated/tests/$testId'
+    | '/api/public/test-site/slow'
+    | '/api/public/worker/tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  TestSiteRoute: typeof TestSiteRoute
+  ApiPublicTestSiteSlowRoute: typeof ApiPublicTestSiteSlowRoute
+  ApiPublicWorkerTickRoute: typeof ApiPublicWorkerTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +175,105 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-site': {
+      id: '/test-site'
+      path: '/test-site'
+      fullPath: '/test-site'
+      preLoaderRoute: typeof TestSiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/projects/$projectId': {
+      id: '/_authenticated/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/projects/new': {
+      id: '/_authenticated/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof AuthenticatedProjectsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/runs/$runId': {
+      id: '/_authenticated/runs/$runId'
+      path: '/runs/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof AuthenticatedRunsRunIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tests/$testId': {
+      id: '/_authenticated/tests/$testId'
+      path: '/tests/$testId'
+      fullPath: '/tests/$testId'
+      preLoaderRoute: typeof AuthenticatedTestsTestIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/test-site/slow': {
+      id: '/api/public/test-site/slow'
+      path: '/api/public/test-site/slow'
+      fullPath: '/api/public/test-site/slow'
+      preLoaderRoute: typeof ApiPublicTestSiteSlowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/worker/tick': {
+      id: '/api/public/worker/tick'
+      path: '/api/public/worker/tick'
+      fullPath: '/api/public/worker/tick'
+      preLoaderRoute: typeof ApiPublicWorkerTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
+  AuthenticatedProjectsNewRoute: typeof AuthenticatedProjectsNewRoute
+  AuthenticatedRunsRunIdRoute: typeof AuthenticatedRunsRunIdRoute
+  AuthenticatedTestsTestIdRoute: typeof AuthenticatedTestsTestIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
+  AuthenticatedProjectsNewRoute: AuthenticatedProjectsNewRoute,
+  AuthenticatedRunsRunIdRoute: AuthenticatedRunsRunIdRoute,
+  AuthenticatedTestsTestIdRoute: AuthenticatedTestsTestIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  TestSiteRoute: TestSiteRoute,
+  ApiPublicTestSiteSlowRoute: ApiPublicTestSiteSlowRoute,
+  ApiPublicWorkerTickRoute: ApiPublicWorkerTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
