@@ -109,14 +109,21 @@ export const draftPlan = createServerFn({ method: "POST" })
     if (!project) throw new Error("Project not found");
     const { chatJson, AiUnavailable, PLAN_SYSTEM_PROMPT } = await import("@/lib/ai/provider.server");
     try {
-      const out = await chatJson<{ steps: unknown }>(
+      const out = await chatJson<{ steps: unknown; assumptions?: unknown; ambiguities?: unknown }>(
         PLAN_SYSTEM_PROMPT,
         `Website: ${project.base_url}\nJourney:\n${data.instruction}`,
       );
+      const strs = (x: unknown) => (Array.isArray(x) ? x.filter((s): s is string => typeof s === "string").slice(0, 15).map((s) => s.slice(0, 300)) : []);
       const v = validatePlan(out.steps, project.base_url);
-      return { steps: (Array.isArray(out.steps) ? out.steps : []) as Step[], issues: v.ok ? [] : v.issues, error: null };
+      return {
+        steps: (Array.isArray(out.steps) ? out.steps : []) as Step[],
+        issues: v.ok ? [] : v.issues,
+        assumptions: strs(out.assumptions),
+        ambiguities: strs(out.ambiguities),
+        error: null,
+      };
     } catch (e) {
-      if (e instanceof AiUnavailable) return { steps: [] as Step[], issues: [], error: e.message };
+      if (e instanceof AiUnavailable) return { steps: [] as Step[], issues: [], assumptions: [] as string[], ambiguities: [] as string[], error: e.message };
       throw e;
     }
   });

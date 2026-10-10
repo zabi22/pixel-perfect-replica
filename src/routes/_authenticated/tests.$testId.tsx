@@ -46,6 +46,7 @@ function Builder() {
   const [issues, setIssues] = useState<PlanIssue[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [source, setSource] = useState<string | null>(null);
+  const [notes, setNotes] = useState<{ assumptions: string[]; ambiguities: string[] } | null>(null);
 
   const existing = useQuery({
     queryKey: ["test", testId],
@@ -82,10 +83,14 @@ function Builder() {
     setBusy("draft");
     try {
       const r = await draft({ data: { projectId, instruction } });
-      if (r.error) toast.error(`AI drafting unavailable: ${r.error}. You can still write steps by hand.`);
+      if (r.error) {
+        toast.error(`AI drafting unavailable: ${r.error}. Use a template or write steps by hand.`);
+        return; // keep whatever the user already has
+      }
       setRows(toRows(r.steps));
       setIssues(r.issues);
-      setSource(r.error ? null : "AI draft");
+      setNotes({ assumptions: r.assumptions, ambiguities: r.ambiguities });
+      setSource("AI draft");
       if (!name && instruction) setName(instruction.slice(0, 60));
     } catch (e) {
       toast.error((e as Error).message);
@@ -198,6 +203,22 @@ function Builder() {
             <Plus /> Add step
           </Button>
         </div>
+        {notes && source === "AI draft" && (notes.assumptions.length > 0 || notes.ambiguities.length > 0) && (
+          <div className="mb-3 space-y-2 rounded-md border border-warning/40 bg-warning/5 p-3 text-xs">
+            {notes.assumptions.length > 0 && (
+              <div>
+                <p className="font-medium">Assumptions (guessed by the AI — check against your site)</p>
+                <ul className="mt-1 list-disc pl-4 text-muted-foreground">{notes.assumptions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+              </div>
+            )}
+            {notes.ambiguities.length > 0 && (
+              <div>
+                <p className="font-medium">Unclear or left out</p>
+                <ul className="mt-1 list-disc pl-4 text-muted-foreground">{notes.ambiguities.map((a, i) => <li key={i}>{a}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        )}
         <ol className="space-y-2">
           {rows.length === 0 && <li className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">Draft a plan or add steps manually.</li>}
           {rows.map((r, i) => {

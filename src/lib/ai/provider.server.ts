@@ -62,7 +62,10 @@ export async function chatJson<T>(system: string, user: string, timeoutMs = 25_0
 }
 
 export const PLAN_SYSTEM_PROMPT = `You convert a plain-English website test journey into a JSON test plan.
-Return ONLY {"steps":[...]} using these step shapes (no other actions exist):
+Return ONLY {"steps":[...],"assumptions":["..."],"ambiguities":["..."]}.
+"assumptions": every guess you made that the user did not state (e.g. a link name, a page path, a confirmation text). You cannot see the site, so any element name or text you did not get from the user IS an assumption — list it.
+"ambiguities": parts of the instruction that are unclear or could not be expressed with the allowed steps (and were therefore left out).
+Follow the user's actual instruction step by step; do not pad it with generic checks. Step shapes (no other actions exist):
 {"action":"goto","path":"/relative/path"}
 {"action":"click","target":T}
 {"action":"fill","target":T,"value":"synthetic test data"}
