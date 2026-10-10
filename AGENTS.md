@@ -8,3 +8,11 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- Browser execution goes only through `BrowserProvider` (src/lib/browser/provider.server.ts); the executor is one JS source string shared by all providers — keeps providers swappable and edge-safe.
+- Never import `playwright-core` statically; edge (Workers) bundles cannot load it.
+- Runs are DB-persisted jobs claimed with leases (claim_run / claim_next_run / sweep_stale_runs); never execute a run without claiming — prevents duplicates and enables recovery.
+- Verdicts come only from recorded browser results (`deriveRunStatus`); AI output is stored separately as hypothesis — honesty is the product.
+- All URL checks run server-side via src/lib/security/url-safety.ts; client checks are UX only.
+- Server code uses web-standard APIs only so the app builds for both Cloudflare and Vercel (see DEPLOYMENT.md).

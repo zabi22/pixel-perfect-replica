@@ -1,6 +1,8 @@
 # DeployProof roadmap
 
-- [ ] Phase 1: auth, schema + RLS, evidence bucket, URL-safety module + tests
-- [ ] Phase 2: BrowserProvider interface, Browserless adapter, executor, tick/claim/lease, /test-site, real journey (needs BROWSERLESS_TOKEN)
-- [ ] Phase 3: evidence, live progress, cancel, timeouts, rerun, AI analysis
-- [ ] Phase 4: dashboard, history, run comparison, acceptance A–G, DEPLOYMENT.md (Vercel + Cloudflare)
+- [x] Phase 1: auth, schema + RLS, evidence bucket, URL-safety module + tests
+- [x] Type errors fixed; Cloudflare + Vercel production builds verified
+- [x] Runner, provider interface, lease/claim/sweep, cancel, rerun, evidence UI, AI analysis
+- [ ] Real Browserless run against controlled page (blocked: BROWSERLESS_TOKEN + published URL)
+- [ ] Scheduled tick backstop (after publish)
+- [ ] Acceptance A–G against real browser
