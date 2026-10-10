@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 
 const ROLES = ["link", "button", "heading", "textbox", "checkbox", "radio", "combobox"] as const;
 const BYS = ["role", "text", "label", "placeholder", "testId"] as const;
-type AnyStep = { action: string; target?: unknown; timeoutMs?: number; text?: string; contains?: string; path?: string; [k: string]: unknown };
+type AnyStep = { action: string; target?: unknown; timeoutMs?: number | undefined; text?: string; contains?: string; path?: string; [k: string]: unknown };
 type AnyTarget = { by: string; role?: string; name?: string; value?: string };
 
 /** Lets the user edit element name, locator strategy, expected result and timeout per step. */
