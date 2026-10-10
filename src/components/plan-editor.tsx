@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 
 const ROLES = ["link", "button", "heading", "textbox", "checkbox", "radio", "combobox"] as const;
 const BYS = ["role", "text", "label", "placeholder", "testId"] as const;
-type AnyStep = Record<string, unknown> & { action: string };
+type AnyStep = { action: string; target?: unknown; timeoutMs?: number; text?: string; contains?: string; path?: string; [k: string]: unknown };
 type AnyTarget = { by: string; role?: string; name?: string; value?: string };
 
 /** Lets the user edit element name, locator strategy, expected result and timeout per step. */
 export function PlanEditor({ plan, highlight, onSubmit, onCancel, busy }: {
-  plan: Step[]; highlight?: number; busy?: boolean; onCancel: () => void; onSubmit: (plan: Step[]) => void;
+  plan: Step[]; highlight?: number | undefined; busy?: boolean; onCancel: () => void; onSubmit: (plan: Step[]) => void;
 }) {
   const [steps, setSteps] = useState<AnyStep[]>(() => JSON.parse(JSON.stringify(plan)));
   const set = (i: number, patch: Partial<AnyStep>) => setSteps((s) => s.map((x, j) => (j === i ? { ...x, ...patch } : x)));
