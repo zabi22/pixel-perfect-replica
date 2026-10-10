@@ -8,6 +8,7 @@ import { describeStep, type Step } from "@/lib/plan/schema";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, fmtTime, fmtDuration } from "@/components/status";
 import { PlanEditor, ObservationPanel } from "@/components/plan-editor";
+import { InvestigationPanel } from "@/components/investigation-panel";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/runs/$runId")({
@@ -36,6 +37,7 @@ function RunPage() {
   const [zoom, setZoom] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [proposedPlan, setProposedPlan] = useState<Step[] | null>(null);
 
   const q = useQuery({
     queryKey: ["run", runId],
@@ -117,8 +119,12 @@ function RunPage() {
 
       {editing && (
         <div className="mb-6">
-          <PlanEditor plan={plan} highlight={failedIdx} busy={busy} onCancel={() => setEditing(false)} onSubmit={(p) => doRerun(p)} />
+          <PlanEditor key={JSON.stringify(proposedPlan)} plan={proposedPlan ?? plan} highlight={failedIdx} busy={busy} onCancel={() => { setEditing(false); setProposedPlan(null); }} onSubmit={(p) => doRerun(p)} />
         </div>
+      )}
+
+      {!active && ["failed", "inconclusive", "infra_error"].includes(run.status) && (
+        <InvestigationPanel runId={run.id} plan={plan} onReviewLocator={(p) => { setProposedPlan(p); setEditing(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
       )}
 
       {active && (
