@@ -92,6 +92,7 @@ export type Database = {
           idempotency_key: string
           instruction: string
           lease_until: string | null
+          parent_run_id: string | null
           plan: Json
           project_id: string
           provider: string | null
@@ -113,6 +114,7 @@ export type Database = {
           idempotency_key: string
           instruction?: string
           lease_until?: string | null
+          parent_run_id?: string | null
           plan: Json
           project_id: string
           provider?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           idempotency_key?: string
           instruction?: string
           lease_until?: string | null
+          parent_run_id?: string | null
           plan?: Json
           project_id?: string
           provider?: string | null
@@ -144,6 +147,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "runs_parent_run_id_fkey"
+            columns: ["parent_run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "runs_project_id_fkey"
             columns: ["project_id"]
@@ -170,6 +180,7 @@ export type Database = {
           id: string
           network_errors: Json
           observed: string | null
+          page_observation: Json | null
           position: number
           run_id: string
           screenshot_path: string | null
@@ -188,6 +199,7 @@ export type Database = {
           id?: string
           network_errors?: Json
           observed?: string | null
+          page_observation?: Json | null
           position: number
           run_id: string
           screenshot_path?: string | null
@@ -206,6 +218,7 @@ export type Database = {
           id?: string
           network_errors?: Json
           observed?: string | null
+          page_observation?: Json | null
           position?: number
           run_id?: string
           screenshot_path?: string | null
@@ -314,6 +327,7 @@ export type Database = {
           idempotency_key: string
           instruction: string
           lease_until: string | null
+          parent_run_id: string | null
           plan: Json
           project_id: string
           provider: string | null
@@ -344,6 +358,7 @@ export type Database = {
           idempotency_key: string
           instruction: string
           lease_until: string | null
+          parent_run_id: string | null
           plan: Json
           project_id: string
           provider: string | null
