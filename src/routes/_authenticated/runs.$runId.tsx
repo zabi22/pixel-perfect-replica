@@ -8,6 +8,7 @@ import { describeStep, type Step } from "@/lib/plan/schema";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, fmtTime, fmtDuration } from "@/components/status";
 import { PlanEditor, ObservationPanel } from "@/components/plan-editor";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/runs/$runId")({
   head: () => ({
@@ -219,6 +220,8 @@ function RunPage() {
         </section>
       )}
 
+      <RunHistory testId={run.test_id} currentId={run.id} />
+
       <details className="mt-8">
         <summary className="cursor-pointer text-xs text-muted-foreground">Worker log ({events.length})</summary>
         <ul className="mt-2 space-y-1 font-mono text-[11px] text-muted-foreground">
@@ -236,5 +239,33 @@ function RunPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function RunHistory({ testId, currentId }: { testId: string; currentId: string }) {
+  const q = useQuery({
+    queryKey: ["run-history", testId],
+    queryFn: async () =>
+      (await supabase.from("runs").select("id,status,created_at,started_at,finished_at").eq("test_id", testId).order("created_at", { ascending: false }).limit(15)).data ?? [],
+  });
+  const others = (q.data ?? []).filter((r) => r.id !== currentId);
+  return (
+    <section className="mt-8">
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">Other runs of this test</h2>
+      {others.length === 0 ? (
+        <p className="rounded-lg border border-border bg-card px-4 py-4 text-sm text-muted-foreground">{q.isLoading ? "Loading…" : "No other runs yet. Rerun to build history you can compare."}</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+          {others.map((r) => (
+            <li key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+              <StatusBadge status={r.status} />
+              <Link to="/runs/$runId" params={{ runId: r.id }} className="text-sm hover:underline">{fmtTime(r.created_at)}</Link>
+              <span className="font-mono text-xs text-muted-foreground">{fmtDuration(r.started_at, r.finished_at)}</span>
+              <Link to="/runs/compare" search={{ a: r.id, b: currentId }} className="ml-auto text-xs text-primary hover:underline">Compare with this run</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
