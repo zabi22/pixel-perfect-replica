@@ -58,7 +58,7 @@ Both share the same executor and security rules.
 ## Step-by-step: your own Supabase + Cloudflare
 
 1. **Supabase project**: create one at supabase.com. Note Project URL, publishable (anon) key, service-role key, project ref.
-2. **Schema**: apply `drizzle/migrations/0000_*.sql` … `0004_*.sql` in numeric order, e.g. `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/migrations/0000_migration.sql` (repeat per file) or paste each into the SQL editor. Apply to an empty project once; do not re-run.
+2. **Schema**: apply (0000 schema+RLS+worker RPCs, 0001 evidence storage policies, 0002 `claim_run`, 0003 lineage+observations, 0004 verdict-column locks) `drizzle/migrations/0000_*.sql` … `0004_*.sql` in numeric order, e.g. `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/migrations/0000_migration.sql` (repeat per file) or paste each into the SQL editor. Apply to an empty project once; do not re-run.
 3. **Storage**: the migrations add the policies but not the bucket. Create a **private** bucket named `evidence` (Storage → New bucket, Public off), or run `insert into storage.buckets (id, name, public) values ('evidence','evidence',false);`.
 4. **Auth**: enable Email provider (confirm email on). Authentication → URL Configuration: Site URL = `https://<your-domain>`, Redirect URLs add `https://<your-domain>/**` (sign-up links return to `/dashboard` on the current origin).
 5. **Cloudflare**:
@@ -71,14 +71,21 @@ Both share the same executor and security rules.
    npx wrangler deploy
    ```
    `WORKER_SECRET`: any long random string (e.g. `openssl rand -hex 32`). Add a custom domain in the Cloudflare dashboard, then use it in step 4.
-6. **Recovery cron** (Supabase SQL editor; enable extensions `pg_cron`, `pg_net` first):
+6. **Recovery cron** (Supabase SQL editor; enable extensions `pg_cron`, `pg_net` and `supabase_vault` first). The secret lives in Vault, so it is never in committed SQL or in `cron.job.command`:
    ```sql
+   -- once; paste the real value only in the SQL editor, never commit it
+   select vault.create_secret('<WORKER_SECRET>', 'deployproof_worker_secret');
+   select vault.create_secret('https://<your-domain>/api/public/worker/tick', 'deployproof_tick_url');
+
+   -- idempotent: cron.schedule with an existing job name replaces that job (no duplicates)
    select cron.schedule('deployproof-tick', '*/2 * * * *', $$
      select net.http_post(
-       url := 'https://<your-domain>/api/public/worker/tick',
-       headers := jsonb_build_object('Authorization', 'Bearer <WORKER_SECRET>', 'Content-Type', 'application/json'),
+       url := (select decrypted_secret from vault.decrypted_secrets where name = 'deployproof_tick_url'),
+       headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization',
+         'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'deployproof_worker_secret')),
        body := '{}'::jsonb, timeout_milliseconds := 90000);
    $$);
    ```
-   Check: `curl -X POST -H "Authorization: Bearer <WORKER_SECRET>" https://<your-domain>/api/public/worker/tick` → `{"ok":true,"executed":0}`; without the header → 401.
+   Rotate: `select vault.update_secret((select id from vault.secrets where name='deployproof_worker_secret'), '<new>');` and `npx wrangler secret put WORKER_SECRET`. Verify one job: `select jobname, schedule from cron.job;`. Remove: `select cron.unschedule('deployproof-tick');`. Results appear in `net._http_response` (status/body only, request headers are not stored).
+   Manual check: `curl -X POST -H "Authorization: Bearer $WORKER_SECRET" https://<your-domain>/api/public/worker/tick` → `{"ok":true,"executed":0}`; without or with a wrong token → 401. Each tick sweeps expired leases (interrupted runs → Inconclusive) then executes at most one queued run.
 7. **Acceptance test (live)**: sign up → confirm email link lands on your domain → create a project for a site you are authorised to test → run the "Homepage smoke test" template → report shows real steps + screenshots → refresh, still there → run a test with a deliberately wrong link text → Failed with observation → sign in as a second user and confirm the first user's project/runs are not visible.
