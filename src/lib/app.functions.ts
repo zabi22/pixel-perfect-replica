@@ -259,7 +259,7 @@ export const investigateRun = createServerFn({ method: "POST" })
       .order("position");
     const { redactDeep } = await import("@/lib/security/redact");
     const { chatJson, AiUnavailable } = await import("@/lib/ai/provider.server");
-    const { validateInvestigation, INVESTIGATE_SYSTEM_PROMPT, pickInvestigationScreenshot, visualObservations, VISION_PROMPT_ADDENDUM } = await import("@/lib/ai/investigate");
+    const { validateInvestigation, INVESTIGATE_SYSTEM_PROMPT, pickInvestigationScreenshot, visualObservations, VISION_PROMPT_ADDENDUM, maskStepValues } = await import("@/lib/ai/investigate");
     const { aiSupportsVision } = await import("@/lib/ai/provider.server");
     const rows = steps ?? [];
     // Screenshot: failing step only, ownership-checked path, downloaded with the user's own (RLS) client, sent inline — never made public.
@@ -282,7 +282,7 @@ export const investigateRun = createServerFn({ method: "POST" })
     const evidence = redactDeep({
       run: { status: run.status, error_code: run.error_code, error_message: run.error_message, target_url: run.target_url },
       steps: rows.map((s) => ({
-        step_number: s.position + 1, step: s.step, status: s.status, expected: s.expected, observed: s.observed, error_code: s.error_code,
+        step_number: s.position + 1, step: maskStepValues(s.step), status: s.status, expected: s.expected, observed: s.observed, error_code: s.error_code,
         console_errors: s.console_errors, network_errors: s.network_errors, url_after: s.url_after, page_observation: s.page_observation,
         screenshot_recorded: !!s.screenshot_path,
       })),

@@ -34,7 +34,7 @@ describe("validateInvestigation", () => {
   });
 });
 
-import { pickInvestigationScreenshot, visualObservations } from "./investigate";
+import { pickInvestigationScreenshot, visualObservations, maskStepValues } from "./investigate";
 import { redactDeep } from "@/lib/security/redact";
 
 describe("screenshot evidence", () => {
@@ -57,9 +57,10 @@ describe("screenshot evidence", () => {
     expect(visualObservations({ visualObservations: ["A cookie banner covers the menu"] }, true)).toEqual(["A cookie banner covers the menu"]);
   });
   it("redacts credentials before evidence reaches the AI", () => {
-    const out = JSON.stringify(redactDeep({ observed: "token=abc123secret", url_after: "https://x.test/?access_token=zzz", step: { action: "fill", value: "hunter2", target: { by: "label", value: "Password" } } }));
-    expect(out).not.toContain("abc123secret");
+    const out = JSON.stringify(redactDeep({ observed: "Authorization: Bearer abc123secretvalue", url_after: "https://x.test/?access_token=zzz", step: maskStepValues({ action: "fill", value: "hunter2", target: { by: "label", value: "Password" } }) }));
+    expect(out).not.toContain("abc123secretvalue");
     expect(out).not.toContain("zzz");
+    expect(out).not.toContain("hunter2");
   });
   it("investigation output carries no verdict field", () => {
     const r = validateInvestigation({ status: "passed", verdict: "passed" }, steps, plan) as Record<string, unknown>;

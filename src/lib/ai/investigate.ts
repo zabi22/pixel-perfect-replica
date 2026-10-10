@@ -123,3 +123,9 @@ export function visualObservations(raw: unknown, imageSupplied: boolean): string
 
 export const VISION_PROMPT_ADDENDUM = `
 A screenshot of the failing step is attached. Add "visualObservations":["what is visibly shown in the screenshot"] — describe only what is visible; do not read or repeat any personal data, emails, or form values. Visual observations are not confirmed facts; keep "facts" limited to the JSON evidence.`;
+
+/** Typed form values never go to the AI — only the fact that a value was typed. */
+export function maskStepValues(step: unknown): unknown {
+  if (step && typeof step === "object" && "value" in step && (step as { action?: string }).action === "fill") return { ...(step as object), value: "[typed value hidden]" };
+  return step;
+}
