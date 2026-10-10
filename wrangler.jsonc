@@ -1,0 +1,11 @@
+// Cloudflare Workers deploy config for the `npx vite build` output (nitro preset cloudflare-module).
+// Secrets are NOT stored here — add them with `npx wrangler secret put NAME` (see DEPLOYMENT.md).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "deployproof",
+  "main": "dist/server/index.mjs",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "dist/client", "binding": "ASSETS" },
+  "observability": { "enabled": true }
+}
