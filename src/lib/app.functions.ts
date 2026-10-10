@@ -259,20 +259,48 @@ export const investigateRun = createServerFn({ method: "POST" })
       .order("position");
     const { redactDeep } = await import("@/lib/security/redact");
     const { chatJson, AiUnavailable } = await import("@/lib/ai/provider.server");
-    const { validateInvestigation, INVESTIGATE_SYSTEM_PROMPT } = await import("@/lib/ai/investigate");
+    const { validateInvestigation, INVESTIGATE_SYSTEM_PROMPT, pickInvestigationScreenshot, visualObservations, VISION_PROMPT_ADDENDUM, maskStepValues } = await import("@/lib/ai/investigate");
+    const { aiSupportsVision } = await import("@/lib/ai/provider.server");
     const rows = steps ?? [];
+    // Screenshot: failing step only, ownership-checked path, downloaded with the user's own (RLS) client, sent inline — never made public.
+    let image: string | undefined;
+    let visualNote: string;
+    const pick = pickInvestigationScreenshot(rows, context.userId, run.id);
+    if ("reason" in pick) visualNote = pick.reason;
+    else if (!aiSupportsVision()) visualNote = "The configured AI model does not accept images, so the screenshot was not analysed.";
+    else {
+      const { data: blob, error: de } = await sb.storage.from("evidence").download(pick.path);
+      if (de || !blob || blob.size > 4_000_000) visualNote = "The screenshot could not be retrieved, so only text evidence was used.";
+      else {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        image = `data:${blob.type || "image/jpeg"};base64,${btoa(bin)}`;
+        visualNote = "The failing step's screenshot was supplied to the AI.";
+      }
+    }
     const evidence = redactDeep({
       run: { status: run.status, error_code: run.error_code, error_message: run.error_message, target_url: run.target_url },
       steps: rows.map((s) => ({
-        step_number: s.position + 1, step: s.step, status: s.status, expected: s.expected, observed: s.observed, error_code: s.error_code,
+        step_number: s.position + 1, step: maskStepValues(s.step), status: s.status, expected: s.expected, observed: s.observed, error_code: s.error_code,
         console_errors: s.console_errors, network_errors: s.network_errors, url_after: s.url_after, page_observation: s.page_observation,
         screenshot_recorded: !!s.screenshot_path,
       })),
     });
     try {
-      const out = await chatJson<unknown>(INVESTIGATE_SYSTEM_PROMPT, `Evidence JSON:\n${JSON.stringify(evidence).slice(0, 14_000)}`, 40_000);
+      const prompt = `Evidence JSON:\n${JSON.stringify(evidence).slice(0, 14_000)}`;
+      let out: unknown;
+      try {
+        out = await chatJson<unknown>(INVESTIGATE_SYSTEM_PROMPT + (image ? VISION_PROMPT_ADDENDUM : ""), prompt, 40_000, image);
+      } catch (e) {
+        if (!image || !(e instanceof AiUnavailable)) throw e;
+        // Image request rejected: fall back to text-only once.
+        image = undefined;
+        visualNote = "The AI could not process the screenshot, so only text evidence was used.";
+        out = await chatJson<unknown>(INVESTIGATE_SYSTEM_PROMPT, prompt, 40_000);
+      }
       const plan = (Array.isArray(run.plan) ? run.plan : []) as Step[];
-      return { ok: true as const, report: validateInvestigation(out, rows as never, plan) };
+      return { ok: true as const, report: { ...validateInvestigation(out, rows as never, plan), visualObservations: visualObservations(out, !!image), visualNote, screenshotAnalysed: !!image } };
     } catch (e) {
       if (e instanceof AiUnavailable) return { ok: false as const, error: `AI investigation unavailable: ${e.message}. The recorded report below is unaffected.` };
       if (e instanceof SyntaxError) return { ok: false as const, error: "The AI returned an unreadable answer. Nothing was changed; try again." };

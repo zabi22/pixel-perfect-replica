@@ -27,7 +27,15 @@ export function getAiConfig(): AiConfig | null {
 
 export class AiUnavailable extends Error {}
 
-export async function chatJson<T>(system: string, user: string, timeoutMs = 25_000): Promise<T> {
+/** Whether the configured model accepts image input. Lovable gateway default (Gemini) does; custom providers opt in with AI_VISION=true. */
+export function aiSupportsVision(): boolean {
+  const cfg = getAiConfig();
+  if (!cfg) return false;
+  if (process.env["AI_VISION"]) return process.env["AI_VISION"] === "true";
+  return cfg.baseUrl.includes("ai.gateway.lovable.dev") && /gemini|gpt-[45o]/i.test(cfg.model);
+}
+
+export async function chatJson<T>(system: string, user: string, timeoutMs = 25_000, imageDataUrl?: string): Promise<T> {
   const cfg = getAiConfig();
   if (!cfg) throw new AiUnavailable("No AI provider configured");
   const ac = new AbortController();
@@ -41,7 +49,7 @@ export async function chatJson<T>(system: string, user: string, timeoutMs = 25_0
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
-          { role: "user", content: user },
+          { role: "user", content: imageDataUrl ? [{ type: "text", text: user }, { type: "image_url", image_url: { url: imageDataUrl } }] : user },
         ],
       }),
       signal: ac.signal,

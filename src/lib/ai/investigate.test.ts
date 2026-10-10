@@ -33,3 +33,38 @@ describe("validateInvestigation", () => {
     expect(validateInvestigation("nonsense", steps, plan).hypotheses).toEqual([]);
   });
 });
+
+import { pickInvestigationScreenshot, visualObservations, maskStepValues } from "./investigate";
+import { redactDeep } from "@/lib/security/redact";
+
+describe("screenshot evidence", () => {
+  const U = "user-a", R = "run-1";
+  const failed = (p: string | null) => [{ position: 0, status: "passed", screenshot_path: `${U}/${R}/0.jpg` }, { position: 1, status: "failed", screenshot_path: p }];
+  it("uses the failing step's screenshot from this user's run folder", () => {
+    expect(pickInvestigationScreenshot(failed(`${U}/${R}/1.jpg`), U, R)).toEqual({ path: `${U}/${R}/1.jpg` });
+  });
+  it("refuses screenshots from another user or another run", () => {
+    expect("reason" in pickInvestigationScreenshot(failed(`user-b/${R}/1.jpg`), U, R)).toBe(true);
+    expect("reason" in pickInvestigationScreenshot(failed(`${U}/run-2/1.jpg`), U, R)).toBe(true);
+    expect("reason" in pickInvestigationScreenshot(failed(`${U}/${R}/../../x.jpg`), U, R)).toBe(true);
+  });
+  it("explains a missing screenshot", () => {
+    const r = pickInvestigationScreenshot(failed(null), U, R);
+    expect("reason" in r && r.reason).toMatch(/No screenshot/);
+  });
+  it("drops visual observations unless an image was really supplied", () => {
+    expect(visualObservations({ visualObservations: ["A cookie banner covers the menu"] }, false)).toEqual([]);
+    expect(visualObservations({ visualObservations: ["A cookie banner covers the menu"] }, true)).toEqual(["A cookie banner covers the menu"]);
+  });
+  it("redacts credentials before evidence reaches the AI", () => {
+    const out = JSON.stringify(redactDeep({ observed: "Authorization: Bearer abc123secretvalue", url_after: "https://x.test/?access_token=zzz", step: maskStepValues({ action: "fill", value: "hunter2", target: { by: "label", value: "Password" } }) }));
+    expect(out).not.toContain("abc123secretvalue");
+    expect(out).not.toContain("zzz");
+    expect(out).not.toContain("hunter2");
+  });
+  it("investigation output carries no verdict field", () => {
+    const r = validateInvestigation({ status: "passed", verdict: "passed" }, steps, plan) as Record<string, unknown>;
+    expect(r["status"]).toBeUndefined();
+    expect(r["verdict"]).toBeUndefined();
+  });
+});
