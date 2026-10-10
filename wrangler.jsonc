@@ -7,5 +7,7 @@
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "dist/client", "binding": "ASSETS" },
+  "no_bundle": true,
+  "rules": [{ "type": "ESModule", "globs": ["**/*.mjs", "**/*.js"] }],
   "observability": { "enabled": true }
 }
