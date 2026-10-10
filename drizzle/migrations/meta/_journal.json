@@ -29,6 +29,13 @@
       "when": 1791641099277,
       "tag": "0003_locator_evidence_and_rerun_lineage",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791641785998,
+      "tag": "0004_lock_run_verdict_columns",
+      "breakpoints": true
     }
   ]
 }
