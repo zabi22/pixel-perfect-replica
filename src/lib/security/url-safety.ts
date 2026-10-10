@@ -48,7 +48,7 @@ export function parseIPv4(host: string): number[] | null {
 }
 
 export function isBlockedIPv4(o: number[]): boolean {
-  const [a, b, c] = o;
+  const a = o[0] ?? 0, b = o[1] ?? 0, c = o[2] ?? 0;
   if (a === 0) return true; // this network
   if (a === 10) return true;
   if (a === 127) return true;
@@ -78,14 +78,15 @@ export function parseIPv6(input: string): number[] | null {
   if (maybeV4.includes(".")) {
     const v4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(maybeV4) ? maybeV4.split(".").map(Number) : null;
     if (!v4 || v4.some((n) => n > 255)) return null;
-    tailV4 = [(v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3]];
+    const [p0 = 0, p1 = 0, p2 = 0, p3 = 0] = v4;
+    tailV4 = [(p0 << 8) | p1, (p2 << 8) | p3];
     s = s.slice(0, lastColon + 1) + "0:0";
   }
   const halves = s.split("::");
   if (halves.length > 2) return null;
   const parse = (h: string) => (h === "" ? [] : h.split(":"));
-  const head = parse(halves[0]);
-  const tail = halves.length === 2 ? parse(halves[1]) : [];
+  const head = parse(halves[0] ?? "");
+  const tail = halves.length === 2 ? parse(halves[1] ?? "") : [];
   const fill = 8 - head.length - tail.length;
   if (halves.length === 1 && head.length !== 8) return null;
   if (halves.length === 2 && fill < 1) return null;
@@ -97,19 +98,21 @@ export function parseIPv6(input: string): number[] | null {
     out.push(parseInt(g, 16));
   }
   if (tailV4.length) {
-    out[6] = tailV4[0];
-    out[7] = tailV4[1];
+    out[6] = tailV4[0] ?? 0;
+    out[7] = tailV4[1] ?? 0;
   }
   return out;
 }
 
-export function isBlockedIPv6(g: number[]): boolean {
+export function isBlockedIPv6(input: number[]): boolean {
+  const [g0 = 0, g1 = 0, g2 = 0, g3 = 0, g4 = 0, g5 = 0, g6 = 0, g7 = 0] = input;
+  const g = [g0, g1, g2, g3, g4, g5, g6, g7] as const;
   const allZeroUntil = (n: number) => g.slice(0, n).every((x) => x === 0);
   if (g.every((x) => x === 0)) return true; // ::
   if (allZeroUntil(7) && g[7] === 1) return true; // ::1
   const v4From = (hi: number, lo: number) => [hi >> 8, hi & 255, lo >> 8, lo & 255];
   // IPv4-mapped ::ffff:a.b.c.d and IPv4-compatible ::a.b.c.d
-  if (allZeroUntil(5) && (g[5] === 0xffff || g[5] === 0)) return isBlockedIPv4(v4From(g[6], g[7])) || g[5] === 0;
+  if (allZeroUntil(5) && (g[5] === 0xffff || g[5] === 0)) return isBlockedIPv4(v4From(g6, g7)) || g[5] === 0;
   // IPv4-translated ::ffff:0:a.b.c.d
   if (allZeroUntil(4) && g[4] === 0xffff && g[5] === 0) return true;
   if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64 (both well-known and local-use)
@@ -117,10 +120,10 @@ export function isBlockedIPv6(g: number[]): boolean {
   if (g[0] === 0x2001 && g[1] === 0) return true; // Teredo
   if (g[0] === 0x2001 && g[1] === 0xdb8) return true; // documentation
   if (g[0] === 0x0100 && g[1] === 0 && g[2] === 0 && g[3] === 0) return true; // discard
-  if ((g[0] & 0xfe00) === 0xfc00) return true; // ULA fc00::/7 (incl. fd00::/8, AWS fd00:ec2::254)
-  if ((g[0] & 0xffc0) === 0xfe80) return true; // link-local
-  if ((g[0] & 0xffc0) === 0xfec0) return true; // site-local (deprecated)
-  if ((g[0] & 0xff00) === 0xff00) return true; // multicast
+  if ((g0 & 0xfe00) === 0xfc00) return true; // ULA fc00::/7 (incl. fd00::/8, AWS fd00:ec2::254)
+  if ((g0 & 0xffc0) === 0xfe80) return true; // link-local
+  if ((g0 & 0xffc0) === 0xfec0) return true; // site-local (deprecated)
+  if ((g0 & 0xff00) === 0xff00) return true; // multicast
   return false;
 }
 
