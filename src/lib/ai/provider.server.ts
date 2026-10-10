@@ -3,15 +3,21 @@
  * is present; set AI_BASE_URL / AI_API_KEY / AI_MODEL to use any other compatible provider.
  * AI output never determines a test verdict.
  */
-export type AiConfig = { baseUrl: string; apiKey: string; model: string };
+export type AiConfig = { baseUrl: string; apiKey: string; model: string; gemini?: boolean };
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 
 export function getAiConfig(): AiConfig | null {
-  const key = process.env["AI_API_KEY"];
+  const key = process.env["AI_API_KEY"]?.trim();
   if (key) {
+    // Google AI Studio keys start with "AIza"; they must go to Gemini's OpenAI-compatible endpoint, not api.openai.com.
+    const explicit = process.env["AI_BASE_URL"]?.replace(/\/$/, "");
+    const gemini = explicit ? explicit.includes("generativelanguage.googleapis.com") : key.startsWith("AIza");
     return {
-      baseUrl: (process.env["AI_BASE_URL"] || "https://api.openai.com/v1").replace(/\/$/, ""),
+      baseUrl: explicit || (gemini ? GEMINI_BASE : "https://api.openai.com/v1"),
       apiKey: key,
-      model: process.env["AI_MODEL"] || "gpt-4o-mini",
+      model: process.env["AI_MODEL"] || (gemini ? "gemini-2.5-flash" : "gpt-4o-mini"),
+      gemini,
     };
   }
   const lovable = process.env["LOVABLE_API_KEY"];
