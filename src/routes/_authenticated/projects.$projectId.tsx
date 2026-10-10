@@ -115,6 +115,7 @@ function ProjectPage() {
               <option value="failed">Failed</option>
               <option value="inconclusive">Inconclusive</option>
               <option value="running">Running / queued</option>
+              <option value="infra_error">Infrastructure error</option>
               <option value="cancelled">Cancelled</option>
               <option value="never">Never run</option>
             </select>
@@ -141,7 +142,7 @@ function ProjectPage() {
                 {latest ? (
                   <Link to="/runs/$runId" params={{ runId: latest.id }} className="flex items-center gap-1">
                     <StatusBadge status={latest.status} />
-                    {latest.error_code?.startsWith("infra") || latest.error_code?.includes("browser") ? <span className="font-mono text-[10px] text-muted-foreground">{latest.error_code}</span> : null}
+                    
                   </Link>
                 ) : <span className="text-xs text-muted-foreground">never run</span>}
                 {last && prev && (
