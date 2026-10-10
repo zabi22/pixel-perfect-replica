@@ -105,13 +105,14 @@ export function parseIPv6(input: string): number[] | null {
 }
 
 export function isBlockedIPv6(input: number[]): boolean {
-  const g = Array.from({ length: 8 }, (_, i) => input[i] ?? 0);
+  const [g0 = 0, g1 = 0, g2 = 0, g3 = 0, g4 = 0, g5 = 0, g6 = 0, g7 = 0] = input;
+  const g = [g0, g1, g2, g3, g4, g5, g6, g7] as const;
   const allZeroUntil = (n: number) => g.slice(0, n).every((x) => x === 0);
   if (g.every((x) => x === 0)) return true; // ::
   if (allZeroUntil(7) && g[7] === 1) return true; // ::1
   const v4From = (hi: number, lo: number) => [hi >> 8, hi & 255, lo >> 8, lo & 255];
   // IPv4-mapped ::ffff:a.b.c.d and IPv4-compatible ::a.b.c.d
-  if (allZeroUntil(5) && (g[5] === 0xffff || g[5] === 0)) return isBlockedIPv4(v4From(g[6], g[7])) || g[5] === 0;
+  if (allZeroUntil(5) && (g[5] === 0xffff || g[5] === 0)) return isBlockedIPv4(v4From(g6, g7)) || g[5] === 0;
   // IPv4-translated ::ffff:0:a.b.c.d
   if (allZeroUntil(4) && g[4] === 0xffff && g[5] === 0) return true;
   if (g[0] === 0x64 && g[1] === 0xff9b) return true; // NAT64 (both well-known and local-use)
@@ -119,10 +120,10 @@ export function isBlockedIPv6(input: number[]): boolean {
   if (g[0] === 0x2001 && g[1] === 0) return true; // Teredo
   if (g[0] === 0x2001 && g[1] === 0xdb8) return true; // documentation
   if (g[0] === 0x0100 && g[1] === 0 && g[2] === 0 && g[3] === 0) return true; // discard
-  if ((g[0] & 0xfe00) === 0xfc00) return true; // ULA fc00::/7 (incl. fd00::/8, AWS fd00:ec2::254)
-  if ((g[0] & 0xffc0) === 0xfe80) return true; // link-local
-  if ((g[0] & 0xffc0) === 0xfec0) return true; // site-local (deprecated)
-  if ((g[0] & 0xff00) === 0xff00) return true; // multicast
+  if ((g0 & 0xfe00) === 0xfc00) return true; // ULA fc00::/7 (incl. fd00::/8, AWS fd00:ec2::254)
+  if ((g0 & 0xffc0) === 0xfe80) return true; // link-local
+  if ((g0 & 0xffc0) === 0xfec0) return true; // site-local (deprecated)
+  if ((g0 & 0xff00) === 0xff00) return true; // multicast
   return false;
 }
 
