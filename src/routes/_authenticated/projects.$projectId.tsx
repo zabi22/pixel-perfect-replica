@@ -130,7 +130,7 @@ function ProjectPage() {
             const change = last && prev && last.status !== prev.status ? `${prev.status} → ${last.status}` : last && prev ? `unchanged (${last.status})` : null;
             return (
               <li key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <Link to="/tests/$testId" params={{ testId: t.id }} search={{ projectId }} className="min-w-0 flex-1 hover:underline">
+                <Link to="/tests/$testId" params={{ testId: t.id }} search={{ projectId }} className="min-w-0 flex-1 basis-48 break-words hover:underline">
                   <span className="font-medium">{t.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">{t.instruction}</span>
                 </Link>
@@ -161,8 +161,8 @@ function ProjectPage() {
 
       <section>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">Run history</h2>
-        <div className="overflow-hidden rounded-md border border-border">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-normal">Status</th>
