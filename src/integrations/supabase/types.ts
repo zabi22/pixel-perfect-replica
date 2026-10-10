@@ -330,6 +330,36 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_run: {
+        Args: { _lease_seconds?: number; _run_id: string }
+        Returns: {
+          analysis: Json | null
+          attempts: number
+          cancel_requested: boolean
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string
+          instruction: string
+          lease_until: string | null
+          plan: Json
+          project_id: string
+          provider: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["run_status"]
+          target_url: string
+          test_id: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       sweep_stale_runs: { Args: never; Returns: number }
     }
     Enums: {
