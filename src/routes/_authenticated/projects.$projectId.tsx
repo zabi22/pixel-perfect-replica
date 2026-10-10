@@ -42,7 +42,12 @@ function ProjectPage() {
   const { projectId } = Route.useParams();
   const project = useQuery({
     queryKey: ["project", projectId],
-    queryFn: async () => (await supabase.from("projects").select("*").eq("id", projectId).single()).data,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("projects").select("*").eq("id", projectId).single();
+      if (error) throw new Error(error.code === "PGRST116" ? "Project not found or you do not have access." : "Could not load this project. Check your connection and try again.");
+      return data;
+    },
+    retry: 1,
   });
   const tests = useQuery({
     queryKey: ["tests", projectId],
@@ -82,6 +87,9 @@ function ProjectPage() {
     return s === filter;
   });
 
+  if (project.isError) return (
+    <div className="space-y-3"><p className="text-sm text-destructive">{(project.error as Error).message}</p><Button size="sm" variant="outline" onClick={() => project.refetch()}>Try again</Button></div>
+  );
   if (!project.data) return <p className="text-sm text-muted-foreground">Loading…</p>;
   return (
     <div>
@@ -162,7 +170,7 @@ function ProjectPage() {
       <section>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">Run history</h2>
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[560px] whitespace-nowrap text-sm">
             <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-normal">Status</th>
