@@ -242,3 +242,40 @@ export const getConfigStatus = createServerFn({ method: "GET" })
       aiConfigured: !!getAiConfig(),
     };
   });
+
+/** On-demand AI investigation of a finished non-passing run. Reads only the caller's own records (RLS); stores nothing. */
+export const investigateRun = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { runId: string }) => z.object({ runId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+    const { data: run } = await sb.from("runs").select("id,status,error_code,error_message,target_url,plan").eq("id", data.runId).single();
+    if (!run) throw new Error("Run not found");
+    if (!["failed", "inconclusive", "infra_error"].includes(run.status)) return { ok: false as const, error: "Only failed, inconclusive or infrastructure-error runs can be investigated." };
+    const { data: steps } = await sb
+      .from("step_results")
+      .select("position,step,status,expected,observed,error_code,console_errors,network_errors,url_after,page_observation,screenshot_path")
+      .eq("run_id", run.id)
+      .order("position");
+    const { redactDeep } = await import("@/lib/security/redact");
+    const { chatJson, AiUnavailable } = await import("@/lib/ai/provider.server");
+    const { validateInvestigation, INVESTIGATE_SYSTEM_PROMPT } = await import("@/lib/ai/investigate");
+    const rows = steps ?? [];
+    const evidence = redactDeep({
+      run: { status: run.status, error_code: run.error_code, error_message: run.error_message, target_url: run.target_url },
+      steps: rows.map((s) => ({
+        step_number: s.position + 1, step: s.step, status: s.status, expected: s.expected, observed: s.observed, error_code: s.error_code,
+        console_errors: s.console_errors, network_errors: s.network_errors, url_after: s.url_after, page_observation: s.page_observation,
+        screenshot_recorded: !!s.screenshot_path,
+      })),
+    });
+    try {
+      const out = await chatJson<unknown>(INVESTIGATE_SYSTEM_PROMPT, `Evidence JSON:\n${JSON.stringify(evidence).slice(0, 14_000)}`, 40_000);
+      const plan = (Array.isArray(run.plan) ? run.plan : []) as Step[];
+      return { ok: true as const, report: validateInvestigation(out, rows as never, plan) };
+    } catch (e) {
+      if (e instanceof AiUnavailable) return { ok: false as const, error: `AI investigation unavailable: ${e.message}. The recorded report below is unaffected.` };
+      if (e instanceof SyntaxError) return { ok: false as const, error: "The AI returned an unreadable answer. Nothing was changed; try again." };
+      throw e;
+    }
+  });
