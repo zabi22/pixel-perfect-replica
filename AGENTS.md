@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Cloudflare deploys via committed `wrangler.jsonc` with `no_bundle` (nitro output already bundled; re-bundling drops side-effect imports); recovery is an HTTP tick, never a Cron Trigger (no `scheduled()` handler).
 - Browser execution goes only through `BrowserProvider` (src/lib/browser/provider.server.ts); the executor is one JS source string shared by all providers — keeps providers swappable and edge-safe.
 - Never import `playwright-core` statically; edge (Workers) bundles cannot load it.
 - Runs are DB-persisted jobs claimed with leases (claim_run / claim_next_run / sweep_stale_runs); never execute a run without claiming — prevents duplicates and enables recovery.
