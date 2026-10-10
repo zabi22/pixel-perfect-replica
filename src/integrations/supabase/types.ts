@@ -14,16 +14,340 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      projects: {
+        Row: {
+          authorised_at: string
+          base_url: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          authorised_at: string
+          base_url: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          authorised_at?: string
+          base_url?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      run_events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: number
+          kind: string
+          message: string
+          run_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: never
+          kind: string
+          message: string
+          run_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: never
+          kind?: string
+          message?: string
+          run_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      runs: {
+        Row: {
+          analysis: Json | null
+          attempts: number
+          cancel_requested: boolean
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string
+          instruction: string
+          lease_until: string | null
+          plan: Json
+          project_id: string
+          provider: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["run_status"]
+          target_url: string
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json | null
+          attempts?: number
+          cancel_requested?: boolean
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key: string
+          instruction?: string
+          lease_until?: string | null
+          plan: Json
+          project_id: string
+          provider?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["run_status"]
+          target_url: string
+          test_id: string
+          user_id?: string
+        }
+        Update: {
+          analysis?: Json | null
+          attempts?: number
+          cancel_requested?: boolean
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string
+          instruction?: string
+          lease_until?: string | null
+          plan?: Json
+          project_id?: string
+          provider?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["run_status"]
+          target_url?: string
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runs_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      step_results: {
+        Row: {
+          console_errors: Json
+          duration_ms: number | null
+          error_code: string | null
+          expected: string | null
+          finished_at: string | null
+          id: string
+          network_errors: Json
+          observed: string | null
+          position: number
+          run_id: string
+          screenshot_path: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["step_status"]
+          step: Json
+          url_after: string | null
+          user_id: string
+        }
+        Insert: {
+          console_errors?: Json
+          duration_ms?: number | null
+          error_code?: string | null
+          expected?: string | null
+          finished_at?: string | null
+          id?: string
+          network_errors?: Json
+          observed?: string | null
+          position: number
+          run_id: string
+          screenshot_path?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["step_status"]
+          step: Json
+          url_after?: string | null
+          user_id: string
+        }
+        Update: {
+          console_errors?: Json
+          duration_ms?: number | null
+          error_code?: string | null
+          expected?: string | null
+          finished_at?: string | null
+          id?: string
+          network_errors?: Json
+          observed?: string | null
+          position?: number
+          run_id?: string
+          screenshot_path?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["step_status"]
+          step?: Json
+          url_after?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_steps: {
+        Row: {
+          id: string
+          position: number
+          step: Json
+          test_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          position: number
+          step: Json
+          test_id: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          position?: number
+          step?: Json
+          test_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_steps_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tests: {
+        Row: {
+          created_at: string
+          id: string
+          instruction: string
+          name: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instruction?: string
+          name: string
+          project_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instruction?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_next_run: {
+        Args: { _lease_seconds?: number }
+        Returns: {
+          analysis: Json | null
+          attempts: number
+          cancel_requested: boolean
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string
+          instruction: string
+          lease_until: string | null
+          plan: Json
+          project_id: string
+          provider: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["run_status"]
+          target_url: string
+          test_id: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      sweep_stale_runs: { Args: never; Returns: number }
     }
     Enums: {
-      [_ in never]: never
+      run_status:
+        | "queued"
+        | "running"
+        | "passed"
+        | "failed"
+        | "inconclusive"
+        | "cancelled"
+        | "infra_error"
+      step_status:
+        | "pending"
+        | "running"
+        | "passed"
+        | "failed"
+        | "skipped"
+        | "inconclusive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +474,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      run_status: [
+        "queued",
+        "running",
+        "passed",
+        "failed",
+        "inconclusive",
+        "cancelled",
+        "infra_error",
+      ],
+      step_status: [
+        "pending",
+        "running",
+        "passed",
+        "failed",
+        "skipped",
+        "inconclusive",
+      ],
+    },
   },
 } as const
