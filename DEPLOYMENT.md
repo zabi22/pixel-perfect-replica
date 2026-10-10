@@ -14,7 +14,7 @@ The app never launches a browser itself.
 ## Build targets (verified with `vite build`)
 
 - **Cloudflare** (default): `npx vite build` → nitro preset `cloudflare-module`; deploy with `npx wrangler deploy` from the output dir. `nodejs_compat` is enabled by the preset.
-- **Vercel**: `NITRO_PRESET=vercel npx vite build` (or let Vercel auto-detect). Output `.vercel/output`, Node 22 function. Inside the Lovable sandbox `NITRO_PRESET` is ignored; it is honoured in CI/Vercel.
+- **Vercel**: `NITRO_PRESET=vercel npx vite build` (or let Vercel auto-detect). Output `.vercel/output`, Node 22 function. Inside the Lovable sandbox `NITRO_PRESET` is ignored (always Cloudflare); outside it (Vercel CI, local) it is honoured. `vite.config.ts` sets `maxDuration: 120` for the Vercel function so a claimed run (~80 s max) is not cut off on Hobby.
 
 ## Environment variables (server unless marked)
 
@@ -52,4 +52,5 @@ Both share the same executor and security rules.
 
 - URLs: http/https only, ports 80/443/8080/8443, no credentials, IPv4/IPv6 private/loopback/link-local/metadata/NAT64/6to4/Teredo blocked incl. encoded forms; DNS-over-HTTPS check of every A/AAAA at project creation, run creation and run start; reachability probe re-validates each redirect hop.
 - In the browser every request is checked against the project site + asset allow-list; IP-literal hosts are refused. The browser runs on Browserless's network, so DNS pinning is not possible there; the allow-list is the control.
+- Users can only INSERT queued runs (fixed column list) and UPDATE `cancel_requested`; verdict columns, step results and events are writable only by the worker.
 - RLS: users only read their own rows; runs can only be inserted `queued`; step results/events are worker-only; worker RPCs are service-role only.
