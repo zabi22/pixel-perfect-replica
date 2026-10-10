@@ -108,7 +108,8 @@ class BrowserlessFunctionProvider implements BrowserProvider {
               : "browser_provider_error";
       throw new InfraError(code, `Browserless responded HTTP ${res.status}${body ? `: ${body}` : ""}`);
     }
-    const out = (await res.json()) as ExecOutcome;
+    const raw = (await res.json()) as ExecOutcome | { data: ExecOutcome };
+    const out = ("data" in raw && raw.data ? raw.data : raw) as ExecOutcome;
     if (!out || !Array.isArray(out.steps)) throw new InfraError("browser_provider_error", "Browserless returned an unexpected response");
     for (const s of out.steps) await hooks.onStep(s);
     return out;
