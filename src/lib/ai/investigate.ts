@@ -96,3 +96,30 @@ Return ONLY JSON:
  "missingEvidence":["information not recorded that would be needed for a confident conclusion"],
  "locatorSuggestion":null | {"step":1-based failing step,"proposed":{same step JSON shape as the plan, same action, new target},"reason":"..."}}
 Rules: never state a root cause as fact. If error_code indicates infrastructure, configuration, DNS, policy, budget or worker interruption, say the website itself was not verified and do not blame the site. Only propose a locatorSuggestion when the new name appears verbatim in that step's page_observation; otherwise null. Never suggest changing the verdict.`;
+
+/** Pick the failing step's screenshot, only if its storage path is inside this user's folder for this exact run. */
+export function pickInvestigationScreenshot(
+  steps: { position: number; status: string; screenshot_path: string | null }[],
+  userId: string,
+  runId: string,
+): { path: string } | { reason: string } {
+  const failed = steps.find((x) => x.status === "failed" || x.status === "inconclusive");
+  if (!failed) return { reason: "No failing or inconclusive step was recorded, so no screenshot was used." };
+  const p = failed.screenshot_path;
+  if (!p) return { reason: "No screenshot was recorded for the failing step." };
+  if (!p.startsWith(`${userId}/${runId}/`) || p.includes("..")) return { reason: "The recorded screenshot does not belong to this run, so it was not used." };
+  return { path: p };
+}
+
+/** Visual observations are kept only when an image was actually supplied to a vision-capable model. */
+export function visualObservations(raw: unknown, imageSupplied: boolean): string[] {
+  if (!imageSupplied) return [];
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  return (Array.isArray(r["visualObservations"]) ? r["visualObservations"] : [])
+    .filter((x): x is string => typeof x === "string" && x.length > 0)
+    .slice(0, 6)
+    .map((x) => x.slice(0, 300));
+}
+
+export const VISION_PROMPT_ADDENDUM = `
+A screenshot of the failing step is attached. Add "visualObservations":["what is visibly shown in the screenshot"] — describe only what is visible; do not read or repeat any personal data, emails, or form values. Visual observations are not confirmed facts; keep "facts" limited to the JSON evidence.`;

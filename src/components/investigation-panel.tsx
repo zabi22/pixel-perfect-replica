@@ -11,7 +11,7 @@ export function InvestigationPanel({ runId, plan, onReviewLocator }: { runId: st
   const investigate = useServerFn(investigateRun);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<Investigation | null>(null);
+  const [report, setReport] = useState<(Investigation & { visualObservations: string[]; visualNote: string; screenshotAnalysed: boolean }) | null>(null);
 
   async function go() {
     setBusy(true);
@@ -46,6 +46,11 @@ export function InvestigationPanel({ runId, plan, onReviewLocator }: { runId: st
           {report.facts.length > 0 && (
             <div><h3 className="text-xs font-medium uppercase tracking-wide text-success">Confirmed facts</h3>
               <ul className="mt-1 list-disc pl-5">{report.facts.map((f, i) => <li key={i}>{f.text}<span className="text-muted-foreground">{n(f.steps)}</span></li>)}</ul></div>
+          )}
+          <p className="text-xs text-muted-foreground">Screenshot: {report.visualNote}</p>
+          {report.screenshotAnalysed && report.visualObservations.length > 0 && (
+            <div><h3 className="text-xs font-medium uppercase tracking-wide text-info">Visual observations (AI reading of the screenshot, not confirmed)</h3>
+              <ul className="mt-1 list-disc pl-5">{report.visualObservations.map((v, i) => <li key={i}>{v}</li>)}</ul></div>
           )}
           {report.hypotheses.length > 0 && (
             <div><h3 className="text-xs font-medium uppercase tracking-wide text-warning">Possible explanations (hypotheses, not confirmed)</h3>
