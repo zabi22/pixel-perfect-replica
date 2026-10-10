@@ -38,6 +38,7 @@ export function aiSupportsVision(): boolean {
   const cfg = getAiConfig();
   if (!cfg) return false;
   if (process.env["AI_VISION"]) return process.env["AI_VISION"] === "true";
+  if (cfg.gemini) return true;
   return cfg.baseUrl.includes("ai.gateway.lovable.dev") && /gemini|gpt-[45o]/i.test(cfg.model);
 }
 
@@ -49,7 +50,9 @@ export async function chatJson<T>(system: string, user: string, timeoutMs = 25_0
   try {
     const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
-      headers: { authorization: `Bearer ${cfg.apiKey}`, "content-type": "application/json" },
+      headers: cfg.gemini
+        ? { "x-goog-api-key": cfg.apiKey, "content-type": "application/json" }
+        : { authorization: `Bearer ${cfg.apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({
         model: cfg.model,
         response_format: { type: "json_object" },
@@ -62,7 +65,7 @@ export async function chatJson<T>(system: string, user: string, timeoutMs = 25_0
     });
     if (res.status === 429) throw new AiUnavailable("AI rate limit reached, try again shortly");
     if (res.status === 402) throw new AiUnavailable("AI credits exhausted");
-    if (!res.ok) throw new AiUnavailable(`AI request failed (${res.status})`);
+    if (!res.ok) throw new AiUnavailable(`AI provider rejected the request (HTTP ${res.status}${await providerError(res, cfg.apiKey)})`);
     const json = (await res.json()) as { choices: { message: { content: string } }[] };
     const content = json.choices?.[0]?.message?.content ?? "";
     const cleaned = content.replace(/^```(?:json)?\s*|\s*```$/g, "");
@@ -97,3 +100,16 @@ export const ANALYSIS_SYSTEM_PROMPT = `You are a QA engineer explaining a browse
 You receive ONLY recorded observations from a real browser run. Do not invent facts.
 Return JSON: {"observed":"1-3 sentences restating only what the evidence shows","hypotheses":["possible cause", "..."],"nextStep":"one concrete debugging step"}.
 Hypotheses must be phrased as possibilities ("may", "could"). Never claim backend or database failures as fact. If a navigation/DNS/policy/infrastructure error occurred, say the app itself was not verified.`;
+
+/** Sanitized provider error: status/code/message only, key scrubbed, never headers. */
+export async function providerError(res: Response, apiKey: string): Promise<string> {
+  try {
+    const b = (await res.json()) as unknown;
+    const e = (Array.isArray(b) ? b[0] : b) as { error?: { code?: unknown; status?: unknown; message?: unknown } };
+    const parts = [e?.error?.status, e?.error?.code, e?.error?.message].filter((x) => x !== undefined && x !== null).map(String);
+    if (!parts.length) return "";
+    return `: ${parts.join(" · ").split(apiKey).join("[redacted]").replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]").slice(0, 300)}`;
+  } catch {
+    return "";
+  }
+}
