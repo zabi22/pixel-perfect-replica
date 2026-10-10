@@ -148,7 +148,7 @@ async function __dp_run(page, ctx, kind, hooks) {
     els.forEach(function (el) {
       var vis = visible(el); var n = name(el); var r = role(el);
       if (!vis) { if (want && n.toLowerCase().indexOf(want) !== -1) hidden++; return; }
-      if (el.getAttribute("aria-expanded") === "false" || /menu|meny|navigation/i.test(n) && r === "button") collapsed.push(n.slice(0, 40));
+      if (r === "button" && /\\b(menu|meny|menü|navigation|hamburger)\\b/i.test(n + " " + (el.getAttribute("aria-controls") || ""))) collapsed.push(n.slice(0, 40));
       var item = { role: r, name: n, href: path(el) };
       if (want && n.toLowerCase().indexOf(want) !== -1) matches.push(item);
       var k = r + "|" + n + "|" + item.href; if (seen[k] || !n) return; seen[k] = 1;

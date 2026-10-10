@@ -16,3 +16,4 @@
 - Verdicts come only from recorded browser results (`deriveRunStatus`); AI output is stored separately as hypothesis — honesty is the product.
 - All URL checks run server-side via src/lib/security/url-safety.ts; client checks are UX only.
 - Server code uses web-standard APIs only so the app builds for both Cloudflare and Vercel (see DEPLOYMENT.md).
+- Locator failures store a redacted accessible-page observation (step_results.page_observation); ambiguous matches are INCONCLUSIVE and never clicked — evidence over guessing.
