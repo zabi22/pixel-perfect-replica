@@ -119,6 +119,46 @@ async function __dp_run(page, ctx, kind, hooks) {
     };
   }
 
+
+  // Accessible page summary for locator failures. Self-contained. Never reads input values,
+  // cookies or storage; hrefs are reduced to same-site path (no query/hash/credentials).
+  function observePage(t) {
+    function norm(s) { return (s || "").replace(/\\s+/g, " ").trim(); }
+    function visible(el) { var r = el.getBoundingClientRect(); var s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none"; }
+    function name(el) {
+      var v = el.getAttribute("aria-label"); if (v) return norm(v);
+      if (el.tagName === "INPUT") return norm(el.getAttribute("placeholder") || el.getAttribute("name") || el.type);
+      return norm(el.getAttribute("title") || el.innerText || el.textContent || el.getAttribute("alt")).slice(0, 80);
+    }
+    function role(el) {
+      var r = el.getAttribute("role"); if (r) return r;
+      var tg = el.tagName;
+      if (tg === "A") return "link"; if (tg === "BUTTON") return "button"; if (/^H[1-6]$/.test(tg)) return "heading";
+      if (tg === "SELECT") return "combobox"; if (tg === "TEXTAREA") return "textbox";
+      if (tg === "INPUT") return /^(submit|button|reset)$/.test(el.type) ? "button" : el.type === "checkbox" ? "checkbox" : el.type === "radio" ? "radio" : "textbox";
+      return tg.toLowerCase();
+    }
+    function path(el) {
+      var h = el.getAttribute("href"); if (!h) return undefined;
+      try { var u = new URL(h, location.href); if (u.protocol === "mailto:" || u.protocol === "tel:") return u.protocol; if (u.origin !== location.origin) return u.hostname; return u.pathname; } catch (e) { return undefined; }
+    }
+    var want = norm(t.by === "role" ? t.name : t.value).toLowerCase();
+    var els = Array.prototype.slice.call(document.querySelectorAll("a[href],button,[role=button],[role=link],[role=menuitem],[role=tab],h1,h2,h3,input,select,textarea"));
+    var seen = {}, items = [], hidden = 0, collapsed = [], matches = [];
+    els.forEach(function (el) {
+      var vis = visible(el); var n = name(el); var r = role(el);
+      if (!vis) { if (want && n.toLowerCase().indexOf(want) !== -1) hidden++; return; }
+      if (el.getAttribute("aria-expanded") === "false" || /menu|meny|navigation/i.test(n) && r === "button") collapsed.push(n.slice(0, 40));
+      var item = { role: r, name: n, href: path(el) };
+      if (want && n.toLowerCase().indexOf(want) !== -1) matches.push(item);
+      var k = r + "|" + n + "|" + item.href; if (seen[k] || !n) return; seen[k] = 1;
+      if (items.length < 60) items.push(item);
+    });
+    var bodyTxt = (document.body ? document.body.innerText : "").toLowerCase();
+    var mentions = 0; if (want) { var p = 0; while ((p = bodyTxt.indexOf(want, p)) !== -1 && mentions < 50) { mentions++; p += want.length; } }
+    return { want: want, url: location.origin + location.pathname, title: norm(document.title).slice(0, 120), matches: matches.slice(0, 15), hiddenMatches: hidden, textMentions: mentions, collapsedMenus: collapsed.slice(0, 5), elements: items };
+  }
+
   async function locate(target, deadline) {
     var last = { found: 0 };
     while (true) {
@@ -192,8 +232,16 @@ async function __dp_run(page, ctx, kind, hooks) {
     var label = describeTarget(s.target);
     var el = await locate(s.target, deadline);
     if (el.found !== 1) {
-      if (el.ambiguous) return { code: "element_ambiguous", expected: label + " is a single element", observed: el.found + " visible elements match " + label + "; make the target more specific" };
-      return { code: "element_not_found", expected: label + " is visible", observed: el.hidden ? label + " exists but is hidden (" + el.hidden + " match)" : "No element matching " + label + " appeared within " + timeoutMs + "ms" };
+      var obs = null;
+      try { obs = await page.evaluate(observePage, s.target); } catch (e) { obs = { error: clip(String(e && e.message || e), 200) }; }
+      if (el.ambiguous) return { code: "element_ambiguous", expected: label + " is a single element", observed: el.found + " visible elements match " + label + ". No element was clicked; choose a more specific target.", observation: obs };
+      var extra = "";
+      if (obs && obs.textMentions === 0) extra = ' The text "' + clip(obs.want, 60) + '" does not appear anywhere in the page text.';
+      else if (obs && obs.textMentions > 0) extra = ' The text appears ' + obs.textMentions + ' time(s) in the page, but not as a visible ' + (s.target.role || "matching element") + '.';
+      if (obs && obs.collapsedMenus && obs.collapsedMenus.length) extra += " Collapsed menu control(s) present: " + obs.collapsedMenus.map(function (m) { return '"' + m + '"'; }).join(", ") + ".";
+      return { code: "element_not_found", expected: label + " is visible",
+        observed: (el.hidden ? label + " exists but is hidden (" + el.hidden + " match)." : "No element matching " + label + " appeared within " + timeoutMs + "ms.") + extra,
+        observation: obs };
     }
     if (s.action === "waitFor" || s.action === "assertVisible") return { code: null, expected: label + " is visible", observed: "Found " + el.tag.toLowerCase() + (el.name ? ' "' + clip(el.name, 60) + '"' : "") };
     if (el.disabled) return { code: "element_disabled", expected: label + " is enabled", observed: label + " is disabled" };

@@ -5,6 +5,7 @@
  */
 import { DESTRUCTIVE_RE, LIMITS, deriveRunStatus, stepStatusFor, validatePlan, type Step } from "@/lib/plan/schema";
 import { checkUrlResolved } from "@/lib/security/url-safety";
+import { redactDeep, redactText } from "@/lib/security/redact";
 import { getProvider, InfraError, type ExecStepResult } from "@/lib/browser/provider.server";
 import { chatJson, getAiConfig, ANALYSIS_SYSTEM_PROMPT } from "@/lib/ai/provider.server";
 
@@ -115,12 +116,13 @@ async function execute(admin: Admin, run: RunRow) {
       .update({
         status,
         expected: r.expected,
-        observed: r.observed,
+        observed: redactText(r.observed ?? ""),
         error_code: r.code,
-        console_errors: (r.consoleErrors ?? []) as never,
-        network_errors: (r.networkErrors ?? []) as never,
+        console_errors: redactDeep(r.consoleErrors ?? []) as never,
+        network_errors: redactDeep(r.networkErrors ?? []) as never,
+        page_observation: (r.observation ? redactDeep(r.observation) : null) as never,
         screenshot_path: screenshotPath,
-        url_after: r.url ?? null,
+        url_after: r.url ? redactText(r.url) : null,
         started_at: r.startedAt,
         finished_at: new Date(new Date(r.startedAt).getTime() + r.durationMs).toISOString(),
         duration_ms: r.durationMs,

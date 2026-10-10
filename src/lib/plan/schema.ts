@@ -137,11 +137,12 @@ export function describeStep(s: Step): string {
 export type RunStatus = "queued" | "running" | "passed" | "failed" | "inconclusive" | "cancelled" | "infra_error";
 export type StepStatus = "pending" | "running" | "passed" | "failed" | "skipped" | "inconclusive";
 
-/** Error codes that are evidence of an application-level failure. */
+/** Error codes that are evidence of an application-level failure.
+ *  element_ambiguous is deliberately NOT here: several plausible matches means the
+ *  test target needs clarifying, so the step is INCONCLUSIVE (never passed, never a bug). */
 const FAILURE_CODES = new Set([
   "assertion_failed",
   "element_not_found",
-  "element_ambiguous",
   "element_disabled",
   "option_not_found",
   "http_error",

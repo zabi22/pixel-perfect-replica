@@ -42,6 +42,13 @@ describe("verdicts", () => {
   it("fails on an assertion failure", () => {
     expect(deriveRunStatus([{ status: "passed" }, { status: "failed" }], 2)).toBe("failed");
   });
+  it("ambiguous locator is inconclusive, never passed", () => {
+    expect(stepStatusFor("element_ambiguous")).toBe("inconclusive");
+    expect(deriveRunStatus([{ status: "passed" }, { status: "inconclusive" }], 2)).toBe("inconclusive");
+  });
+  it("missing element is a failure", () => {
+    expect(stepStatusFor("element_not_found")).toBe("failed");
+  });
   it("navigation errors and timeouts are inconclusive, not app bugs", () => {
     expect(stepStatusFor("nav_error")).toBe("inconclusive");
     expect(stepStatusFor("nav_timeout")).toBe("inconclusive");
