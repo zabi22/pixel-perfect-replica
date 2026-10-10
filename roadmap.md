@@ -8,4 +8,5 @@
 - [ ] Scheduled tick backstop (after publish)
 - [ ] Acceptance A–G against real browser
 - [x] Locator diagnostics: page observation on failure, ambiguous = inconclusive, redaction, edit & rerun with lineage
-- [ ] Re-verify Cloudflare/Vercel builds and live deploy after these changes
+- [x] Cloudflare + Vercel builds re-verified
+- [ ] Live deploy on Vercel or Cloudflare (needs your account + secrets)

@@ -17,3 +17,4 @@
 - All URL checks run server-side via src/lib/security/url-safety.ts; client checks are UX only.
 - Server code uses web-standard APIs only so the app builds for both Cloudflare and Vercel (see DEPLOYMENT.md).
 - Locator failures store a redacted accessible-page observation (step_results.page_observation); ambiguous matches are INCONCLUSIVE and never clicked — evidence over guessing.
+- Run verdicts, step results and events are writable only by the service-role worker; users get column-limited INSERT on runs and UPDATE(cancel_requested) — prevents self-forged PASSED results.
