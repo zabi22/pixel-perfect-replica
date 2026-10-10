@@ -1,7 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { createRun } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StatusBadge, fmtTime, fmtDuration } from "@/components/status";
 import { LIMITS } from "@/lib/plan/schema";
 
@@ -51,6 +56,31 @@ function ProjectPage() {
   const recovered = markRecoveries(runs.data ?? []);
   const testName = (id: string) => tests.data?.find((t) => t.id === id)?.name ?? "—";
   const lastByTest = (id: string) => runs.data?.find((r) => r.test_id === id);
+  const finishedByTest = (id: string) => (runs.data ?? []).filter((r) => r.test_id === id && ["passed", "failed", "inconclusive"].includes(r.status)).slice(0, 2);
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [rerunning, setRerunning] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const run = useServerFn(createRun);
+  async function rerun(testId: string) {
+    setRerunning(testId);
+    try {
+      const r = await run({ data: { testId, idempotencyKey: crypto.randomUUID() } });
+      navigate({ to: "/runs/$runId", params: { runId: r.runId } });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRerunning(null);
+    }
+  }
+  const visibleTests = (tests.data ?? []).filter((t) => {
+    if (q && !`${t.name} ${t.instruction}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (filter === "all") return true;
+    const s = lastByTest(t.id)?.status;
+    if (filter === "never") return !s;
+    if (filter === "running") return s === "running" || s === "queued";
+    return s === filter;
+  });
 
   if (!project.data) return <p className="text-sm text-muted-foreground">Loading…</p>;
   return (
@@ -75,17 +105,53 @@ function ProjectPage() {
             </Button>
           )}
         </div>
+        {(tests.data?.length ?? 0) > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Input placeholder="Search tests" value={q} onChange={(e) => setQ(e.target.value)} className="h-8 max-w-xs" aria-label="Search tests" />
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter by latest result"
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <option value="all">All results</option>
+              <option value="passed">Passed</option>
+              <option value="failed">Failed</option>
+              <option value="inconclusive">Inconclusive</option>
+              <option value="running">Running / queued</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="never">Never run</option>
+            </select>
+          </div>
+        )}
         <ul className="divide-y divide-border rounded-md border border-border">
           {tests.data?.length === 0 && <li className="px-4 py-6 text-sm text-muted-foreground">No tests yet. Describe a critical journey to create one.</li>}
-          {tests.data?.map((t) => {
-            const last = lastByTest(t.id);
+          {tests.data?.length !== 0 && visibleTests.length === 0 && <li className="px-4 py-6 text-sm text-muted-foreground">No tests match.</li>}
+          {visibleTests.map((t) => {
+            const [last, prev] = finishedByTest(t.id);
+            const latest = lastByTest(t.id);
+            const change = last && prev && last.status !== prev.status ? `${prev.status} → ${last.status}` : last && prev ? `unchanged (${last.status})` : null;
             return (
-              <li key={t.id}>
-                <Link to="/tests/$testId" params={{ testId: t.id }} search={{ projectId }} className="flex items-center gap-3 px-4 py-3 hover:bg-accent">
+              <li key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <Link to="/tests/$testId" params={{ testId: t.id }} search={{ projectId }} className="min-w-0 flex-1 hover:underline">
                   <span className="font-medium">{t.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{t.instruction}</span>
-                  <span className="ml-auto">{last ? <StatusBadge status={last.status} /> : <span className="text-xs text-muted-foreground">never run</span>}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{t.instruction}</span>
                 </Link>
+                {change && (
+                  <span className={`font-mono text-[11px] ${last!.status !== prev!.status ? (last!.status === "passed" ? "text-success" : "text-destructive") : "text-muted-foreground"}`}>
+                    vs previous: {change}
+                  </span>
+                )}
+                {latest ? (
+                  <Link to="/runs/$runId" params={{ runId: latest.id }} className="flex items-center gap-1">
+                    <StatusBadge status={latest.status} />
+                    {latest.error_code?.startsWith("infra") || latest.error_code?.includes("browser") ? <span className="font-mono text-[10px] text-muted-foreground">{latest.error_code}</span> : null}
+                  </Link>
+                ) : <span className="text-xs text-muted-foreground">never run</span>}
+                {last && prev && (
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to="/runs/compare" search={{ a: prev.id, b: last.id }}>Compare</Link>
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" disabled={rerunning === t.id} onClick={() => rerun(t.id)}>
+                  {rerunning === t.id ? "Starting…" : "Rerun"}
+                </Button>
               </li>
             );
           })}
