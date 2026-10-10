@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicWorkerTickRouteImport } from './routes/api/public/worker/tick'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWorkerTickRoute = ApiPublicWorkerTickRouteImport.update({
+  id: '/api/public/worker/tick',
+  path: '/api/public/worker/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/worker/tick': typeof ApiPublicWorkerTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/public/worker/tick'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/worker/tick'
+  id: '__root__' | '/' | '/api/public/worker/tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicWorkerTickRoute: typeof ApiPublicWorkerTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/worker/tick': {
+      id: '/api/public/worker/tick'
+      path: '/api/public/worker/tick'
+      fullPath: '/api/public/worker/tick'
+      preLoaderRoute: typeof ApiPublicWorkerTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicWorkerTickRoute: ApiPublicWorkerTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
